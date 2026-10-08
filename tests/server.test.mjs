@@ -56,7 +56,11 @@ test('local server protects private files, saves settings, and authenticates usi
   assert.match(await page.text(), /粒子人脸动画/);
   const state = await fetch(`${base}/api/status`).then(r => r.json());
   assert.equal(state.chatConfigured, false);
-  for (const name of ['.env', 'config/models.json', 'config/models.local.json', 'reference/index.html']) {
+  const hardware = await fetch(`${base}/api/hardware`).then(r => r.json());
+  assert.ok(hardware.memoryGB > 0);
+  assert.ok(hardware.logicalCores > 0);
+  assert.ok(['base', 'tiny'].includes(hardware.recommendedSpeechModel));
+  for (const name of ['.env', 'config/models.json', 'config/models.local.json', 'reference/index.html', 'assets/%2e%2e%2f.env', 'src/%2e%2e%2fconfig/models.local.json']) {
     assert.equal((await fetch(`${base}/${name}`)).status, 404);
   }
   const defaults = await fetch(`${base}/api/config`).then(r => r.json());

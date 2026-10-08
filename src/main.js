@@ -1,14 +1,96 @@
 import { FaceStage } from './FaceStage.js';
 import { VoiceController } from './VoiceController.js';
+import { chooseVoice, isChineseVoice, normalizeVoiceOptions } from './voice-options.js';
 
 const $ = id => document.getElementById(id);
 const messages = [];
-const tabPanels = { chat: 'panel-chat', model: 'settings', appearance: 'panel-appearance' };
+const tabPanels = { chat: 'panel-chat', model: 'settings', voice: 'panel-voice', appearance: 'panel-appearance' };
 const tabs = [...document.querySelectorAll('[data-tab]')];
 let face, config, requestController, busy = false, requestGeneration = 0, renderReady = false, configLoaded = false;
+let checkedSpeechText = '';
+let auditioning = false, availableVoices = [];
+const voicePreferenceKey = 'pioneer-face-voice-v1';
+let voicePreferences = normalizeVoiceOptions();
+try { voicePreferences = normalizeVoiceOptions(JSON.parse(localStorage.getItem(voicePreferenceKey) || '{}')); } catch {}
+$('voice-rate').value = voicePreferences.rate;
+$('voice-pitch').value = voicePreferences.pitch;
+const speechPreferenceKey = 'pioneer-face-speech-v1';
+let speechPreferences = {};
+try { speechPreferences = JSON.parse(localStorage.getItem(speechPreferenceKey) || '{}') || {}; } catch {}
+if (['bundled', 'local', 'browser'].includes(speechPreferences.mode)) $('recognition-mode').value = speechPreferences.mode;
+if (['base', 'tiny'].includes(speechPreferences.model)) $('speech-model').value = speechPreferences.model;
+if (['chinese', 'english', 'auto'].includes(speechPreferences.language)) $('speech-language').value = speechPreferences.language;
+
+function speechOptions() { return { model: $('speech-model').value, language: $('speech-language').value }; }
+function persistSpeechPreferences() {
+  speechPreferences = { mode: $('recognition-mode').value, ...speechOptions() };
+  try { localStorage.setItem(speechPreferenceKey, JSON.stringify(speechPreferences)); } catch {}
+}
+function voiceOutputOptions() {
+  return { ...voicePreferences, rate: Number($('voice-rate').value), pitch: Number($('voice-pitch').value) };
+}
+function updateVoiceValues() {
+  $('voice-rate-value').textContent = `${Number($('voice-rate').value).toFixed(2)}×`;
+  $('voice-pitch-value').textContent = Number($('voice-pitch').value).toFixed(2);
+}
+function persistVoicePreferences() {
+  voicePreferences = normalizeVoiceOptions(voiceOutputOptions());
+  try { localStorage.setItem(voicePreferenceKey, JSON.stringify(voicePreferences)); } catch {}
+}
+function loadVoiceChoices() {
+  availableVoices = window.speechSynthesis?.getVoices() || [];
+  const defaultVoice = chooseVoice(availableVoices);
+  const automatic = document.createElement('option');
+  automatic.value = '';
+  automatic.textContent = defaultVoice ? `自动选择 · ${defaultVoice.name}` : '自动选择中文声音';
+  const groups = [document.createElement('optgroup'), document.createElement('optgroup')];
+  groups[0].label = '中文音色';
+  groups[1].label = '其他语言';
+  const seen = new Set();
+  for (const item of [...availableVoices].sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))) {
+    if (!item.voiceURI || seen.has(item.voiceURI)) continue;
+    seen.add(item.voiceURI);
+    const option = document.createElement('option');
+    option.value = item.voiceURI;
+    option.textContent = `${item.name} · ${item.lang} · ${item.localService ? '本机' : '在线'}`;
+    groups[isChineseVoice(item) ? 0 : 1].append(option);
+  }
+  $('voice-select').replaceChildren(automatic, ...groups.filter(group => group.children.length));
+  $('voice-select').value = seen.has(voicePreferences.voiceURI) ? voicePreferences.voiceURI : '';
+  $('voice-select').disabled = !availableVoices.length;
+  const chineseCount = availableVoices.filter(isChineseVoice).length;
+  $('voice-list-note').textContent = !window.speechSynthesis ? '此浏览器不支持发声，请用 Chrome 或 Edge 打开。'
+    : !availableVoices.length ? '暂未读到音色。声音就绪后会自动显示；也可检查系统语音包或更换浏览器。'
+    : voicePreferences.voiceURI && !seen.has(voicePreferences.voiceURI) ? '之前选择的音色在此设备不可用，暂用自动声音。可以重新选择。'
+    : chineseCount ? `发现 ${chineseCount} 个中文音色。选一个后点击试听；标为“本机”的声音由系统提供。`
+    : '此设备没有中文音色，可选择其他声音，或安装系统中文语音包后刷新。';
+  updateControls();
+}
+function updateRecognitionNote() {
+  const mode = $('recognition-mode').value;
+  $('bundled-speech-options').hidden = mode !== 'bundled';
+  $('recognition-note').textContent = {
+    bundled: '自带模型在本机识别，不需要额外 Key。录音最长 30 秒，说完点“结束录音”发送。',
+    local: '录音会发送到你配置的外部识别服务。对话 API 和识别 API 分别配置。',
+    browser: '浏览器识别可能使用在线服务；连接失败时可切回内置离线识别。',
+  }[mode];
+}
+async function checkHardware() {
+  try {
+    const hardware = await api('/api/hardware');
+    const platform = { darwin: 'macOS', win32: 'Windows', linux: 'Linux' }[hardware.platform] || hardware.platform;
+    const recommended = hardware.recommendedSpeechModel === 'base' ? 'Base' : 'Tiny';
+    $('hardware-note').textContent = `${platform} · ${hardware.arch.toUpperCase()} · ${hardware.memoryGB} GB 内存 · ${hardware.logicalCores} 个处理器线程。建议初选 Whisper ${recommended}，可按实际体验切换。`;
+    if (!['base', 'tiny'].includes(speechPreferences.model)) $('speech-model').value = hardware.recommendedSpeechModel;
+  } catch { $('hardware-note').textContent = '未能读取本机配置，可手动选择。资源较少时建议 Tiny。'; }
+}
 
 function status(text) {
   $('activity').textContent = text;
+  if (auditioning) {
+    $('voice-audition-status').textContent = text === '就绪' ? '试听结束，后续回应会使用此音色。' : text;
+    if (!voice.playing) auditioning = false;
+  }
   updateControls();
 }
 function updateControls() {
@@ -17,6 +99,10 @@ function updateControls() {
   $('stop-button').disabled = !busy && !voice.active && !voice.playing && !voice.processing;
   $('send-button').disabled = busy;
   $('preview-button').disabled = busy || voice.active || voice.processing || !renderReady;
+  $('test-speech').disabled = busy || voice.active || voice.processing || !renderReady;
+  $('try-speech-chat').disabled = busy || voice.active || voice.processing;
+  $('audition-voice').disabled = busy || voice.active || voice.processing || !renderReady || !availableVoices.length;
+  $('stop-audition').disabled = !voice.playing;
   document.body.dataset.activity = voice.active ? 'listening' : busy || voice.playing ? 'responding' : 'idle';
 }
 const voice = new VoiceController({
@@ -102,7 +188,7 @@ async function sendMessage(text) {
     if (messages.length > 16) messages.splice(0, messages.length - 16);
     $('reply').textContent = result.reply;
     $('message').value = '';
-    if ($('voice-output').checked) voice.speak(result.reply);
+    if ($('voice-output').checked) voice.speak(result.reply, voiceOutputOptions());
     else status('就绪');
   } catch (error) { if (generation === requestGeneration && error.name !== 'AbortError') status(error.message); }
   finally { if (generation === requestGeneration) { busy = false; requestController = null; updateControls(); } }
@@ -111,7 +197,7 @@ $('message-form').addEventListener('submit', event => { event.preventDefault(); 
 $('mic-button').addEventListener('click', async () => {
   if (voice.active) { voice.finishRecording(); updateControls(); return; }
   if (busy) { status('先停止当前回应，再开始说话。'); return; }
-  try { await voice.start($('recognition-mode').value); updateControls(); }
+  try { await voice.start($('recognition-mode').value, speechOptions()); updateControls(); }
   catch (error) { status(error.name === 'NotAllowedError' ? '请在浏览器中允许此页面使用麦克风。' : error.message); }
 });
 $('stop-button').addEventListener('click', () => {
@@ -128,17 +214,76 @@ $('preview-button').addEventListener('click', async () => {
   try { await voice.previewSourceAudio(); }
   catch { status('音频未能播放，请再点一次预览。'); }
 });
+function stopVoicePreview() {
+  auditioning = false;
+  voice.stopPlayback();
+  $('voice-audition-status').textContent = '';
+  if (!busy && !voice.active && !voice.processing) status('就绪');
+}
+$('voice-select').addEventListener('change', () => {
+  stopVoicePreview();
+  voicePreferences.voiceURI = $('voice-select').value;
+  persistVoicePreferences();
+  loadVoiceChoices();
+});
+for (const id of ['voice-rate', 'voice-pitch']) $(id).addEventListener('input', () => {
+  stopVoicePreview();
+  updateVoiceValues();
+  persistVoicePreferences();
+});
+$('audition-voice').addEventListener('click', () => {
+  auditioning = true;
+  const chosen = chooseVoice(availableVoices, voicePreferences.voiceURI);
+  voice.speak(chosen && !isChineseVoice(chosen) ? 'Hello. I am here. How was your day?' : '你好，我在这里。我们可以慢慢聊，你今天过得怎么样？', voiceOutputOptions());
+});
+$('stop-audition').addEventListener('click', () => {
+  stopVoicePreview();
+  $('voice-audition-status').textContent = '试听已停止';
+});
+$('reset-voice').addEventListener('click', () => {
+  stopVoicePreview();
+  voicePreferences = normalizeVoiceOptions();
+  $('voice-rate').value = voicePreferences.rate;
+  $('voice-pitch').value = voicePreferences.pitch;
+  persistVoicePreferences();
+  updateVoiceValues();
+  loadVoiceChoices();
+});
 $('recognition-mode').addEventListener('change', () => {
   voice.cancel();
-  $('recognition-note').textContent = $('recognition-mode').value === 'browser'
-    ? '浏览器识别可能使用在线语音服务。'
-    : '录音仅在你按下“开始说话”后启动。';
+  persistSpeechPreferences();
+  updateRecognitionNote();
   status('就绪');
+});
+for (const id of ['speech-model', 'speech-language']) $(id).addEventListener('change', () => {
+  voice.cancel();
+  persistSpeechPreferences();
+  $('speech-check-status').textContent = '';
+  checkedSpeechText = '';
+  $('try-speech-chat').hidden = true;
+  status('就绪');
+});
+$('check-hardware').addEventListener('click', checkHardware);
+$('test-speech').addEventListener('click', async () => {
+  checkedSpeechText = '';
+  $('try-speech-chat').hidden = true;
+  $('speech-check-status').textContent = '正在准备模型并识别中文示例…';
+  try {
+    const result = await voice.testBundledRecognition(speechOptions());
+    checkedSpeechText = result.text;
+    $('try-speech-chat').hidden = !result.text;
+    $('speech-check-status').textContent = result.text ? `识别成功 · ${result.seconds} 秒：${result.text}` : '示例没有识别出文字，请换一个模型后重试。';
+  } catch (error) { $('speech-check-status').textContent = error.name === 'AbortError' ? '检查已停止' : error.message; }
+});
+$('try-speech-chat').addEventListener('click', () => {
+  if (!checkedSpeechText) return;
+  selectTab('chat');
+  sendMessage(checkedSpeechText);
 });
 function formConfig() {
   return {
     chat: { ...config.chat, provider: $('provider').value, baseUrl: $('model-url').value.trim(), model: $('model-name').value.trim(), apiKeyEnv: $('model-key-env').value.trim() },
-    transcription: { ...config.transcription, baseUrl: $('stt-url').value.trim(), model: $('stt-model').value.trim(), apiKeyEnv: $('stt-key-env').value.trim() },
+    transcription: { ...config.transcription, baseUrl: $('stt-url').value.trim(), model: $('stt-model').value.trim(), apiKeyEnv: $('stt-key-env').value.trim(), language: { chinese: 'zh', english: 'en', auto: 'auto' }[$('speech-language').value] },
   };
 }
 $('settings-form').addEventListener('submit', async event => {
@@ -148,6 +293,7 @@ $('settings-form').addEventListener('submit', async event => {
     const next = formConfig();
     await api('/api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) });
     config = next;
+    persistSpeechPreferences();
     await refreshConnection();
     selectTab('chat');
     status('配置已保存');
@@ -168,6 +314,11 @@ $('load-models').addEventListener('click', async () => {
   finally { $('load-models').disabled = false; }
 });
 
+updateVoiceValues();
+loadVoiceChoices();
+window.speechSynthesis?.addEventListener('voiceschanged', loadVoiceChoices);
+updateRecognitionNote();
+checkHardware();
 try {
   const palettes = await api('/config/palettes.json');
   const themes = {
@@ -189,4 +340,8 @@ try {
   status(error.message);
   $('control-panel').showPopover();
 }
-window.addEventListener('pagehide', () => { voice.cancel(); face?.dispose(); });
+window.addEventListener('pagehide', () => {
+  window.speechSynthesis?.removeEventListener('voiceschanged', loadVoiceChoices);
+  voice.dispose().catch(() => {});
+  face?.dispose();
+});

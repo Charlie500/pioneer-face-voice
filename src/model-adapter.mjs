@@ -31,7 +31,7 @@ async function upstreamJson(url, options = {}) {
   let response;
   const signals = [AbortSignal.timeout(60000), ...(options.signal ? [options.signal] : [])];
   try { response = await fetch(url, { ...options, signal: AbortSignal.any(signals) }); }
-  catch (error) { if (options.signal?.aborted) throw error; throw new Error('无法连接模型服务。请在 Windows 上检查地址、服务状态和监听端口。'); }
+  catch (error) { if (options.signal?.aborted) throw error; throw new Error('无法连接模型服务。请检查服务地址、运行状态和监听端口。'); }
   if (!response.ok) throw new Error(`模型服务返回 HTTP ${response.status}。请检查模型名、接口类型和授权。`);
   try { return await response.json(); } catch { throw new Error('模型服务没有返回 JSON，请检查 API 地址。'); }
 }
@@ -61,12 +61,12 @@ export async function chatReply(config, history, signal) {
 
 export async function transcribe(config, buffer, contentType, signal) {
   const service = config.transcription;
-  if (!service.baseUrl || !service.model) throw new Error('请先配置 Windows 语音识别服务。');
+  if (!service.baseUrl || !service.model) throw new Error('外部语音识别服务尚未配置，请填写服务地址和模型，或使用内置离线识别。');
   const form = new FormData();
   const suffix = contentType.includes('mp4') ? 'm4a' : contentType.includes('wav') ? 'wav' : 'webm';
   form.append('file', new Blob([buffer], { type: contentType }), `voice.${suffix}`);
   form.append('model', service.model);
-  form.append('language', service.language);
+  if (service.language !== 'auto') form.append('language', service.language);
   const data = await upstreamJson(apiUrl(service.baseUrl, 'audio/transcriptions'), { method: 'POST', headers: authHeaders(service), body: form, signal });
   if (typeof data.text !== 'string') throw new Error('语音识别服务没有返回 text 字段。');
   return data.text;

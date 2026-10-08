@@ -9,18 +9,21 @@
 ## 当前可以做什么
 
 - 人脸默认占满整个视口，随窗口比例自动调整构图，保留完整脸部与原始比例。
-- 只保留右上角一个控制按钮；对话、模型与外观集中在 Apple 风格毛玻璃面板中。
+- 只保留右上角一个控制按钮；对话、模型、声音与外观集中在 Apple 风格毛玻璃面板中。
 - 独立运行原站粒子人脸：颜色/深度贴图、鼠标转动、冰白默认色与原站 6 种配色、说话时粒子波纹。
 - 播放原站的短语音，直接检查声音与人脸动画联动。
 - 配置 Ollama 原生接口，或 LM Studio 等兼容 Chat Completions 接口。
-- 按钮录音后发送至可配置的语音识别服务；也可选浏览器识别。
+- 自带 Whisper Tiny / Base 两套多语种识别模型和运行资源，默认在本机离线识别录音，无需另开识别服务或提供识别 Key。
+- 自动读取本机内存和处理器线程数，提供初选建议；识别模型、中文/英语/自动语言均可切换，选择在当前浏览器保留。
+- 可选外部识别 API 或浏览器识别；对话模型保持独立的 API 配置。
 - 模型回复以文字显示，浏览器语音播放期间触发人脸回应；支持中止请求和播放。
+- “声音”页可选择实际可用的中文/其他语言音色并试听，调节语速和音高；选择自动保存，聊天回复使用所选声音。
 
 说话动画沿用原站的粒子变化，尚未实现逐音素口型。当前是按轮次录音/识别/回复，尚未实现双向实时音频流。
 
 ![展开后的毛玻璃控制中心](docs/preview-controls.jpg)
 
-## 在 Windows 上启动
+## 在 Mac 或 Windows 上启动
 
 安装 Node.js 22 或更新版本以及 Git。运行项目本身不需要安装 npm 依赖。
 
@@ -32,7 +35,26 @@ node server.mjs
 
 用 Chrome 或 Edge 打开 <http://127.0.0.1:4173/>。也可以双击 `scripts/start.cmd`。
 
-第一次点击右上角按钮，在“对话”页点击“原站语音预览”，再按 [Windows 交接文档](WINDOWS_HANDOFF.md) 连接本机模型和麦克风。再次点击右上角按钮、点面板外部或按 Esc 可收起面板，语音播放不会因此中断。
+在“对话”页点“开始说话”，允许此 localhost 页面使用麦克风，说完点“结束录音”。内置模型将录音转成文字，再调用已经配置的对话 API；勾选“语音回应”时播放回复并触发人脸回应。录音最长 30 秒，到时自动提交。再次点击右上角按钮、点面板外部或按 Esc 可收起面板。
+
+仓库和完整交接 ZIP 均包含识别模型及 WASM 运行资源，不需要在运行时访问 Hugging Face/CDN、安装 Python 或下载模型。仍需 Node.js 22+，并配置可用的对话服务及其本地授权。Windows 操作见 [交接文档](WINDOWS_HANDOFF.md)。
+
+## 内置语音识别
+
+“模型 → 语音识别”默认选择“内置离线识别”。本机不足 8 GB 内存或不足 4 个处理器线程时初选 Tiny，其余初选 Base；这是资源建议，实际速度可用“用中文示例检查识别”检查。检查成功后，“用识别结果试聊”可验证识别文字到对话 API 的链路。
+
+| 模型 | 随包资源 | 用途 |
+| --- | --- | --- |
+| Whisper Tiny · q8 | 约 43.1 MiB | 轻量选项 |
+| Whisper Base · q8 | 约 77.5 MiB | 默认均衡选项 |
+
+模型由 [Xenova/whisper-tiny](https://huggingface.co/Xenova/whisper-tiny)、[Xenova/whisper-base](https://huggingface.co/Xenova/whisper-base) 提供 ONNX 转换；固定版本和文件校验值见 `assets/speech/manifest.json`。模型在独立 Worker 中使用本机处理器运行，只把识别文字发送给对话 API。运行 `npm run verify:speech` 可检查打包完整性。
+
+## 音色与试听
+
+打开右上角控制中心 → “声音”，在“回应音色”中选择，再点“试听这个声音”。中文音色优先列出，其余按语言标签显示；“本机/在线”标记来自浏览器提供的音色信息。语速可在 0.70–1.30× 之间调整，音高可在 0.80–1.20 之间调整。修改即时保存在当前浏览器；聊天勾选“语音回应”时使用这些设置，试听可独立播放和停止。
+
+自动声音优先选普通话。若某个已保存音色在新设备不可用，会提示并暂用自动声音；可重新选择。音色由操作系统/浏览器提供，Mac 和 Windows 的列表可能不同，不是项目内置的独立 TTS 模型。
 
 ## 模型配置
 
@@ -46,7 +68,7 @@ node server.mjs
 
 “读取已安装模型”会请求服务的模型列表，不下载模型。具体协议依据 [Ollama Chat](https://docs.ollama.com/api/chat)、[Ollama 模型列表](https://docs.ollama.com/api/tags)、[LM Studio Chat Completions](https://lmstudio.ai/docs/developer/openai-compat/chat-completions)。
 
-语音识别服务在“模型 → 授权与识别服务”中独立配置，须接受 `POST /v1/audio/transcriptions` 的 multipart 请求并返回 `{ "text": "识别结果" }`。仅配置对话模型不会自动提供语音识别。
+如改用外部识别，先将“语音识别”切到“外部识别服务”，再在“授权与识别服务”中独立配置。服务须接受 `POST /v1/audio/transcriptions` 的 multipart 请求并返回 `{ "text": "识别结果" }`。本次 Qwen 对话服务实测 HTTP 501，明确不支持音频输入，不能兼作识别服务；默认内置模型解决这一缺项。
 
 若服务需要授权，在界面填写**服务端环境变量的名称**，例如 `MODEL_API_KEY`。密钥值可以由启动 Node 的进程环境提供，也可以保存在项目根目录的本地 `.env` 中；服务器启动时自动读取该文件。不要把密钥值填写到页面、URL 或 `config/models*.json`。`.env` 被 Git 忽略，不包含在交接包中。本项目不创建凭据。
 
@@ -61,7 +83,9 @@ node server.mjs
 | `src/ParticleFace.js` | 提取并格式化的人脸实现；粒子密度、大小、波纹、深度参数 |
 | `src/shaders/face.vert.glsl`、`face.frag.glsl` | 原站人脸的顶点与片元 Shader |
 | `src/FaceStage.js` | 独立渲染、相机、贴图、尺寸与交互宿主 |
-| `src/VoiceController.js` | 麦克风、识别、播放、停止、说话状态 |
+| `src/VoiceController.js`、`src/voice-options.js` | 麦克风、识别、音色选择、播放、停止、说话状态 |
+| `src/LocalSpeechRecognizer.js`、`src/speech-worker.js` | 内置模型加载、音频解码、WASM 识别与中止 |
+| `assets/speech/` | 随项目打包的识别模型、运行时、来源与 SHA-256 校验 |
 | `index.html`、`style.css` | 单入口控制中心、毛玻璃样式与窄屏布局 |
 | `src/main.js` | 面板开合、分栏切换、配色与对话流程；默认冰白由原站蓝宝石配色派生 |
 | `src/model-adapter.mjs` | Ollama / 兼容 API / 语音识别协议 |
@@ -79,6 +103,6 @@ npm test
 
 ## 交接状态
 
-已在 Mac 验证全屏人脸、桌面/窄屏毛玻璃控制中心、原站音频的说话状态、配置界面和接口模拟测试，并从 Mac 页面调用局域网模型完成真实文字对话与两轮上下文。Windows 浏览器、语音识别、中文发声和 GPU 表现仍需验收，详见 [验证记录](docs/VERIFICATION.md)。
+已在 Mac 验证全屏人脸、毛玻璃控制中心、原站音频状态、真实文字模型与两轮上下文；两套内置模型均通过真实中文示例识别，麦克风入口也已启动并中止。Windows 浏览器、真人中文录音、发声实听和 GPU 表现仍需验收，详见 [验证记录](docs/VERIFICATION.md)。
 
 默认服务器只监听 `127.0.0.1`，用于个人本机开发。仓库保留第三方来源信息，未授予原站资源新的开源许可。

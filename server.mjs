@@ -1,6 +1,7 @@
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { validateConfig, chatReply, listModels, transcribe } from './src/model-adapter.mjs';
 
@@ -13,7 +14,7 @@ const args = process.argv.slice(2);
 const valueOf = (name, fallback) => args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
 const port = Number(valueOf('--port', process.env.PORT || 4173));
 const host = valueOf('--host', '127.0.0.1');
-const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.glsl': 'text/plain; charset=utf-8', '.jpg': 'image/jpeg', '.png': 'image/png', '.mp3': 'audio/mpeg', '.woff2': 'font/woff2' };
+const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.glsl': 'text/plain; charset=utf-8', '.txt': 'text/plain; charset=utf-8', '.jpg': 'image/jpeg', '.png': 'image/png', '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.wasm': 'application/wasm', '.woff2': 'font/woff2' };
 
 async function config() {
   const defaults = JSON.parse(await fs.readFile(path.join(root, 'config/models.json'), 'utf8'));
@@ -45,6 +46,11 @@ const server = http.createServer(async (request, response) => {
     if (url.pathname.startsWith('/api/')) {
       // Local UI endpoints accept their own origin. Secret values never enter the browser.
       if (request.headers.origin && request.headers.origin !== `http://${request.headers.host}`) return json(response, 403, { error: '请从本地项目页面操作。' });
+      if (url.pathname === '/api/hardware' && request.method === 'GET') {
+        const memoryGB = Math.round(os.totalmem() / (1024 ** 3));
+        const logicalCores = os.availableParallelism();
+        return json(response, 200, { platform: os.platform(), arch: os.arch(), memoryGB, logicalCores, recommendedSpeechModel: memoryGB >= 8 && logicalCores >= 4 ? 'base' : 'tiny' });
+      }
       const current = await config();
       if (url.pathname === '/api/status' && request.method === 'GET') return json(response, 200, { chatConfigured: Boolean(current.chat.baseUrl && current.chat.model), transcriptionConfigured: Boolean(current.transcription.baseUrl && current.transcription.model), model: current.chat.model, provider: current.chat.provider });
       if (url.pathname === '/api/config' && request.method === 'GET') return json(response, 200, current);
@@ -65,8 +71,10 @@ const server = http.createServer(async (request, response) => {
     if (!['/', '/index.html', '/style.css'].includes(requested) && !requested.startsWith('/src/') && !requested.startsWith('/assets/') && requested !== '/config/palettes.json') return json(response, 404, { error: '文件不存在。' });
     const filename = path.resolve(root, '.' + (requested === '/' ? '/index.html' : requested));
     if (!filename.startsWith(root + path.sep)) return json(response, 403, { error: '路径无效。' });
+    const relative = path.relative(root, filename).split(path.sep).join('/');
+    if (!['index.html', 'style.css', 'config/palettes.json'].includes(relative) && !relative.startsWith('src/') && !relative.startsWith('assets/')) return json(response, 404, { error: '文件不存在。' });
     const bytes = await fs.readFile(filename);
-    response.writeHead(200, { 'Content-Type': types[path.extname(filename)] || 'application/octet-stream', 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' });
+    response.writeHead(200, { 'Content-Type': types[path.extname(filename)] || 'application/octet-stream', 'Content-Length': bytes.length, 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' });
     response.end(bytes);
   } catch (error) {
     if (response.destroyed) return;

@@ -41,7 +41,7 @@ body[data-activity="responding"] .state-light { background: #bcf5e8; box-shadow:
 .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 1px 18px; }
 .panel-heading h2 { margin: 0; font-size: 13px; font-weight: 500; letter-spacing: .08em; color: #e9f1f8d9; }
 #connection-status { margin: 0; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dim); font-size: 11px; }
-.segmented { display: grid; grid-template-columns: repeat(3, 1fr); padding: 3px; gap: 3px; border: 1px solid #ffffff07; background: #00000023; border-radius: 13px; margin-bottom: 21px; }
+.segmented { display: grid; grid-template-columns: repeat(4, 1fr); padding: 3px; gap: 3px; border: 1px solid #ffffff07; background: #00000023; border-radius: 13px; margin-bottom: 21px; }
 .segmented button { background: transparent; border: 0; padding: 8px; border-radius: 10px; color: #aab7c5; font-size: 13px; }
 .segmented button[aria-selected="true"] { background: #ffffff16; box-shadow: 0 1px 5px #00000028, inset 0 1px 0 #ffffff16; color: #f5f9ff; }
 .tab-content { min-width: 0; }
@@ -74,7 +74,17 @@ input.switch::before { content: ''; position: absolute; width: 12px; height: 12p
 input.switch:checked { background: #afcddd57; border-color: #c7e8f43d; }
 input.switch:checked::before { background: #effaff; transform: translateX(13px); }
 .settings-form { display: flex; flex-direction: column; gap: 14px; }
+.voice-settings { display: flex; flex-direction: column; gap: 12px; }
+.voice-settings > label { color: var(--muted); font-size: 12px; }
+.voice-settings .slider-label { display: flex; align-items: center; justify-content: space-between; margin-top: 5px; }
+.slider-label output { color: #deedf6; font-variant-numeric: tabular-nums; }
+.voice-settings input[type="range"] { appearance: auto; min-height: 18px; padding: 0; border: 0; background: transparent; accent-color: #c7deeb; cursor: pointer; }
+.voice-settings .quiet-button { align-self: flex-start; }
+#voice-audition-status:empty { display: none; }
 .settings-form label { display: flex; flex-direction: column; gap: 7px; color: var(--muted); font-size: 12px; }
+#bundled-speech-options { display: flex; flex-direction: column; gap: 10px; }
+#bundled-speech-options .quiet-button { align-self: flex-start; }
+#speech-check-status:empty { display: none; }
 #load-models { margin-top: -6px; align-self: flex-start; }
 .field-divider { height: 1px; background: #ffffff0b; margin: 3px 0; }
 .note { margin: 0; color: var(--dim); font-size: 11px; line-height: 1.7; overflow-wrap: anywhere; }

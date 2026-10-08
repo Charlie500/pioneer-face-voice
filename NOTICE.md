@@ -21,3 +21,11 @@
 公开可读取不等于已获得开源或商业使用许可；本仓库不为第三方内容授予新的许可，保留各自权利归属。当前仓库设为私有，后续公开发布或对外使用前应确认相应素材与代码授权。
 
 精确来源路径与 SHA-256 校验见 `reference/asset-provenance.json`；提取结构见 `reference/extraction.json`。
+
+## 内置语音识别的独立来源
+
+`assets/speech/` 包含 [Xenova/whisper-tiny](https://huggingface.co/Xenova/whisper-tiny) 与 [Xenova/whisper-base](https://huggingface.co/Xenova/whisper-base) 的 q8 ONNX 转换、配置与 tokenizer。发布方模型卡标注 Apache-2.0，原始模型来自 OpenAI Whisper；随包保留模型卡，固定 revision、源 URL、文件大小和 SHA-256 见 `assets/speech/manifest.json`。
+
+浏览器运行时来自官方 npm 包 `@huggingface/transformers@3.8.1`（Apache-2.0），其中还打包了 `@huggingface/jinja@0.5.3`（MIT）；ONNX Runtime Web 版本为 `1.22.0-dev.20250409-89f8206ba4`（MIT）。完整许可文本位于 `assets/speech/runtime/`。它们与原站人脸资源分别保留来源和许可，不改变原站素材的权利归属。
+
+`assets/audio/speech-test-zh.wav` 为本次生成的中文功能检查音频，测试句为“你好，我想和你聊天。请用中文介绍自己。”，使用本机系统中文 voice 合成，不包含个人录音。

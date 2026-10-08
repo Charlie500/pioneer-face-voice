@@ -1,0 +1,244 @@
+{
+  "schemaVersion": 1,
+  "runtimeVersion": "3.8.1",
+  "models": [
+    {
+      "id": "tiny",
+      "model": "Xenova/whisper-tiny",
+      "revision": "5332fcc35e32a33b86612b9a57a89be7906102b1",
+      "license": "apache-2.0",
+      "files": [
+        "config.json",
+        "generation_config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "preprocessor_config.json",
+        "special_tokens_map.json",
+        "added_tokens.json",
+        "normalizer.json",
+        "merges.txt",
+        "vocab.json",
+        "README.md",
+        "onnx/encoder_model_quantized.onnx",
+        "onnx/decoder_model_merged_quantized.onnx"
+      ],
+      "bytes": 45210682
+    },
+    {
+      "id": "base",
+      "model": "Xenova/whisper-base",
+      "revision": "64da57285918e20ea79ea5c88eed7197933abaa8",
+      "license": "apache-2.0",
+      "files": [
+        "config.json",
+        "generation_config.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "preprocessor_config.json",
+        "special_tokens_map.json",
+        "added_tokens.json",
+        "normalizer.json",
+        "merges.txt",
+        "vocab.json",
+        "README.md",
+        "onnx/encoder_model_quantized.onnx",
+        "onnx/decoder_model_merged_quantized.onnx"
+      ],
+      "bytes": 81266456
+    }
+  ],
+  "files": [
+    {
+      "path": "models/Xenova/whisper-base/README.md",
+      "size": 1160,
+      "sha256": "dc362c71002d21febf5cd5256713cd9406d0eb5c32631f73a39791af6029ce9d",
+      "source": "https://huggingface.co/Xenova/whisper-base/resolve/64da57285918e20ea79ea5c88eed7197933abaa8/README.md"
+    },
+    {
+      "path": "models/Xenova/whisper-base/added_tokens.json",
+      "size": 2082,
+      "sha256": "ce949fe720c14311cb6c446e69cfe340dc669d7b006077a6feed6ae571dd7e88",
+      "source": "https://huggingface.co/Xenova/whisper-base/resolve/64da57285918e20ea79ea5c88eed7197933abaa8/added_tokens.json"
+    },
+    {
+      "path": "models/Xenova/whisper-base/config.json",
+      "size": 2248,
+      "sha256": "d1d347fdb422e6347c2f843a90d375aa67ea3f4b3e20d2c3075f9a9f6243685b",
+      "source": "https://huggingface.co/Xenova/whisper-base/resolve/64da57285918e20ea79ea5c88eed7197933abaa8/config.json"
+    },
+    {
+      "path": "models/Xenova/whisper-base/generation_config.json",
+      "size": 3776,
+      "sha256": "3bba359e33fdd6dc1c10f71846a477d339b0242f462f70ea1dd73274caa38d05",
+      "source": "https://huggingface.co/Xenova/whisper-base/resolve/64da57285918e20ea79ea5c88eed7197933abaa8/generation_config.json"
+    },
+    {
+      "path": "models/Xenova/whisper-base/merges.txt",
+      "size": 493869,
+      "sha256": "2df2990a395e35e8dfbc7511e08c12d56018d8d04691e0133e5d63b21e154dc6",
+      "source": "https://huggingface.co/Xenova/whisper-base/resolve/64da57285918e20ea79ea5c88eed7197933abaa8/merges.txt"
+    },
+    {
+      "path": "models/Xenova/whisper-base/normalizer.json",
+      "size": 52666,
+      "sha256": "bf1c507dc8724ca9cf9903640dacfb69dae2f00edee4f21ceba106a7392f26dd",
+      "source": "https://huggingface.co/Xenova/whisper-base/resolve/64da57285918e20ea79ea5c88eed7197933abaa8/normalizer.json"
+    },
+    {
+      "path": "models/Xenova/whisper-base/onnx/decoder_model_merged_quantized.onnx",
+      "size": 53707539,
+      "sha256": "a6beb6baabb66f00b6a686d828c95ffca6146d51900cbad0266cad38f64cf861",
+      "source": "https://huggingface.co/Xenova/whisper-base/resolve/64da57285918e20ea79ea5c88eed7197933abaa8/onnx/decoder_model_merged_quantized.onnx"
+    },
+    {
+      "path": "models/Xenova/whisper-base/onnx/encoder_model_quantized.onnx",
+      "size": 23200850,
+      "sha256": "3e345e977b55620a37c0c2b2af0644e019afdfad562dcf71eb929bb7274285f9",
+      "source": "https://huggingface.co/Xenova/whisper-base/resolve/64da57285918e20ea79ea5c88eed7197933abaa8/onnx/encoder_model_quantized.onnx"
+    },
+    {
+      "path": "models/Xenova/whisper-base/preprocessor_config.json",
+      "size": 339,
+      "sha256": "a6a76d28c93edb273669eb9e0b0636a2bddbb1272c3261e47b7ca6dfdbac1b8d",
+      "source": "https://huggingface.co/Xenova/whisper-base/resolve/64da57285918e20ea79ea5c88eed7197933abaa8/preprocessor_config.json"
+    },
+    {
+      "path": "models/Xenova/whisper-base/special_tokens_map.json",
+      "size": 2194,
+      "sha256": "e67ae3a0aaa99abcd9f187138e12db1f65c16a14761c50ef10eef2c174a7a691",
+      "source": "https://huggingface.co/Xenova/whisper-base/resolve/64da57285918e20ea79ea5c88eed7197933abaa8/special_tokens_map.json"
+    },
+    {
+      "path": "models/Xenova/whisper-base/tokenizer.json",
+      "size": 2480466,
+      "sha256": "27fc476bfe7f17299480be2273fc0608e4d5a99aba2ab5dec5374b4482d1a566",
+      "source": "https://huggingface.co/Xenova/whisper-base/resolve/64da57285918e20ea79ea5c88eed7197933abaa8/tokenizer.json"
+    },
+    {
+      "path": "models/Xenova/whisper-base/tokenizer_config.json",
+      "size": 282683,
+      "sha256": "2a4c4281cf9f51ac6ccc406fdc711a087afe6530f671fa7b80953edc498275ce",
+      "source": "https://huggingface.co/Xenova/whisper-base/resolve/64da57285918e20ea79ea5c88eed7197933abaa8/tokenizer_config.json"
+    },
+    {
+      "path": "models/Xenova/whisper-base/vocab.json",
+      "size": 1036584,
+      "sha256": "50d6a919f0a0601d56a04eb583c780d18553aa388254ba3158eb6a00f13e2c1a",
+      "source": "https://huggingface.co/Xenova/whisper-base/resolve/64da57285918e20ea79ea5c88eed7197933abaa8/vocab.json"
+    },
+    {
+      "path": "models/Xenova/whisper-tiny/README.md",
+      "size": 1160,
+      "sha256": "cdd395427d195f122aee69c00e34183f2fadd8bc217aef35ca7c43395b96d29d",
+      "source": "https://huggingface.co/Xenova/whisper-tiny/resolve/5332fcc35e32a33b86612b9a57a89be7906102b1/README.md"
+    },
+    {
+      "path": "models/Xenova/whisper-tiny/added_tokens.json",
+      "size": 2082,
+      "sha256": "ce949fe720c14311cb6c446e69cfe340dc669d7b006077a6feed6ae571dd7e88",
+      "source": "https://huggingface.co/Xenova/whisper-tiny/resolve/5332fcc35e32a33b86612b9a57a89be7906102b1/added_tokens.json"
+    },
+    {
+      "path": "models/Xenova/whisper-tiny/config.json",
+      "size": 2248,
+      "sha256": "2b2e4e519084e0ea028b19b153f95202735a971870d6844aa26e559edd292e94",
+      "source": "https://huggingface.co/Xenova/whisper-tiny/resolve/5332fcc35e32a33b86612b9a57a89be7906102b1/config.json"
+    },
+    {
+      "path": "models/Xenova/whisper-tiny/generation_config.json",
+      "size": 3716,
+      "sha256": "68ac791fcb4999461a313472125042934656240ba1cba7d1c2627fcbb19ac24c",
+      "source": "https://huggingface.co/Xenova/whisper-tiny/resolve/5332fcc35e32a33b86612b9a57a89be7906102b1/generation_config.json"
+    },
+    {
+      "path": "models/Xenova/whisper-tiny/merges.txt",
+      "size": 493869,
+      "sha256": "2df2990a395e35e8dfbc7511e08c12d56018d8d04691e0133e5d63b21e154dc6",
+      "source": "https://huggingface.co/Xenova/whisper-tiny/resolve/5332fcc35e32a33b86612b9a57a89be7906102b1/merges.txt"
+    },
+    {
+      "path": "models/Xenova/whisper-tiny/normalizer.json",
+      "size": 52666,
+      "sha256": "bf1c507dc8724ca9cf9903640dacfb69dae2f00edee4f21ceba106a7392f26dd",
+      "source": "https://huggingface.co/Xenova/whisper-tiny/resolve/5332fcc35e32a33b86612b9a57a89be7906102b1/normalizer.json"
+    },
+    {
+      "path": "models/Xenova/whisper-tiny/onnx/decoder_model_merged_quantized.onnx",
+      "size": 30727765,
+      "sha256": "6c0c125986b007d2e3734bec84c18bda0152071b90b87fadac6d7764499927a0",
+      "source": "https://huggingface.co/Xenova/whisper-tiny/resolve/5332fcc35e32a33b86612b9a57a89be7906102b1/onnx/decoder_model_merged_quantized.onnx"
+    },
+    {
+      "path": "models/Xenova/whisper-tiny/onnx/encoder_model_quantized.onnx",
+      "size": 10124910,
+      "sha256": "fd9d995b9dcb0520f0dbf6cf68651af639fc385f594d9d876e69ca2802dc438e",
+      "source": "https://huggingface.co/Xenova/whisper-tiny/resolve/5332fcc35e32a33b86612b9a57a89be7906102b1/onnx/encoder_model_quantized.onnx"
+    },
+    {
+      "path": "models/Xenova/whisper-tiny/preprocessor_config.json",
+      "size": 339,
+      "sha256": "a6a76d28c93edb273669eb9e0b0636a2bddbb1272c3261e47b7ca6dfdbac1b8d",
+      "source": "https://huggingface.co/Xenova/whisper-tiny/resolve/5332fcc35e32a33b86612b9a57a89be7906102b1/preprocessor_config.json"
+    },
+    {
+      "path": "models/Xenova/whisper-tiny/special_tokens_map.json",
+      "size": 2194,
+      "sha256": "e67ae3a0aaa99abcd9f187138e12db1f65c16a14761c50ef10eef2c174a7a691",
+      "source": "https://huggingface.co/Xenova/whisper-tiny/resolve/5332fcc35e32a33b86612b9a57a89be7906102b1/special_tokens_map.json"
+    },
+    {
+      "path": "models/Xenova/whisper-tiny/tokenizer.json",
+      "size": 2480466,
+      "sha256": "27fc476bfe7f17299480be2273fc0608e4d5a99aba2ab5dec5374b4482d1a566",
+      "source": "https://huggingface.co/Xenova/whisper-tiny/resolve/5332fcc35e32a33b86612b9a57a89be7906102b1/tokenizer.json"
+    },
+    {
+      "path": "models/Xenova/whisper-tiny/tokenizer_config.json",
+      "size": 282683,
+      "sha256": "2a4c4281cf9f51ac6ccc406fdc711a087afe6530f671fa7b80953edc498275ce",
+      "source": "https://huggingface.co/Xenova/whisper-tiny/resolve/5332fcc35e32a33b86612b9a57a89be7906102b1/tokenizer_config.json"
+    },
+    {
+      "path": "models/Xenova/whisper-tiny/vocab.json",
+      "size": 1036584,
+      "sha256": "50d6a919f0a0601d56a04eb583c780d18553aa388254ba3158eb6a00f13e2c1a",
+      "source": "https://huggingface.co/Xenova/whisper-tiny/resolve/5332fcc35e32a33b86612b9a57a89be7906102b1/vocab.json"
+    },
+    {
+      "path": "runtime/JINJA-LICENSE.txt",
+      "size": 1069,
+      "sha256": "d6e7b19451c1b3d1d66353bb4b1274138953b3bfd9ae60c56e77b1f548796982",
+      "source": "npm:@huggingface/jinja@0.5.3"
+    },
+    {
+      "path": "runtime/ONNXRUNTIME-LICENSE.txt",
+      "size": 1073,
+      "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
+      "source": "https://raw.githubusercontent.com/microsoft/onnxruntime/89f8206ba4/LICENSE"
+    },
+    {
+      "path": "runtime/TRANSFORMERS-LICENSE.txt",
+      "size": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "source": "npm:@huggingface/transformers@3.8.1"
+    },
+    {
+      "path": "runtime/ort-wasm-simd-threaded.jsep.mjs",
+      "size": 44484,
+      "sha256": "08fb86ec433c78bfb032c5d84a68b8e8e5a8d81268fa39e24314179a5767a5b9",
+      "source": "npm:@huggingface/transformers@3.8.1"
+    },
+    {
+      "path": "runtime/ort-wasm-simd-threaded.jsep.wasm",
+      "size": 21596019,
+      "sha256": "c46655e8a94afc45338d4cb2b840475f88e5012d524509916e505079c00bfa39",
+      "source": "npm:@huggingface/transformers@3.8.1"
+    },
+    {
+      "path": "runtime/transformers.min.js",
+      "size": 888173,
+      "sha256": "aa5002b70e789798da263f5f99c62bd3e8fcd0c119258a493c40c180648365fa",
+      "source": "npm:@huggingface/transformers@3.8.1"
+    }
+  ]
+}

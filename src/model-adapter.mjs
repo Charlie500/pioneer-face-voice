@@ -48,7 +48,7 @@ export async function listModels(config) {
 
 export async function chatReply(config, history, signal) {
   const service = config.chat;
-  if (!service.baseUrl || !service.model) throw new Error('请先在“连接模型”中填写服务地址和模型名。');
+  if (!service.baseUrl || !service.model) throw new Error('请先在“模型”中填写服务地址和模型名。');
   if (!Array.isArray(history) || history.some(m => !['user', 'assistant'].includes(m.role) || typeof m.content !== 'string')) throw new Error('对话消息格式无效。');
   const messages = [{ role: 'system', content: service.systemPrompt }, ...history.slice(-16)];
   const body = { model: service.model, messages, stream: false };

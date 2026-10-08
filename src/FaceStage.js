@@ -39,6 +39,7 @@ export class FaceStage {
     if (!this.gl.getProgramParameter(this.face.program.program, this.gl.LINK_STATUS)) throw new Error(`人脸 Shader 编译失败：${this.gl.getProgramInfoLog(this.face.program.program)}`);
     this.face.onLoaded();
     this.face.handleShow(false);
+    this.resize();
     this.lastFrame = performance.now();
     this.frame = requestAnimationFrame(time => this.render(time));
     return this;
@@ -64,7 +65,12 @@ export class FaceStage {
     Object.assign(this.gl.canvas.style, { width: `${width}px`, height: `${height}px` });
     Object.assign(this.scene, { width: width * this.dpr, height: height * this.dpr });
     this.camera.perspective({ aspect: width / height });
-    this.camera.position.z = width < 600 ? 10.5 : 8.5;
+    // Fit the visible portrait to the viewport while preserving facial proportions.
+    const planeSize = this.face ? Math.abs(this.face.geometry.attributes.position.data[0]) * 2 : 6.25;
+    const halfFov = Math.tan(20 * Math.PI / 180);
+    const distanceForHeight = planeSize * 0.30 / (halfFov * 0.98);
+    const distanceForWidth = planeSize * 0.21 / (halfFov * (width / height) * 0.94);
+    this.camera.position.z = 1.25 + Math.max(distanceForHeight, distanceForWidth);
   }
 
   render(time) {

@@ -19,7 +19,7 @@ export class VoiceController {
     try {
       const status = await fetch('/api/status').then(r => r.json());
       if (generation !== this.generation) return;
-      if (!status.transcriptionConfigured) throw new Error('请先在“连接模型”中配置 Windows 语音识别服务，或选择浏览器识别。');
+      if (!status.transcriptionConfigured) throw new Error('请先在“模型”中配置本地识别服务，或选择浏览器识别。');
       if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error('浏览器不支持录音，请在 Windows Chrome/Edge 中打开 localhost 页面。');
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       if (generation !== this.generation) { stream.getTracks().forEach(t => t.stop()); return; }

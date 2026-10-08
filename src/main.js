@@ -3,14 +3,21 @@ import { VoiceController } from './VoiceController.js';
 
 const $ = id => document.getElementById(id);
 const messages = [];
-let face, config, requestController, busy = false, requestGeneration = 0;
-function status(text) { $('activity').textContent = text; updateControls(); }
+const tabPanels = { chat: 'panel-chat', model: 'settings', appearance: 'panel-appearance' };
+const tabs = [...document.querySelectorAll('[data-tab]')];
+let face, config, requestController, busy = false, requestGeneration = 0, renderReady = false, configLoaded = false;
+
+function status(text) {
+  $('activity').textContent = text;
+  updateControls();
+}
 function updateControls() {
-  $('mic-button').textContent = voice.active ? '结束录音' : '开始说话';
-  $('mic-button').disabled = voice.processing;
+  $('mic-label').textContent = voice.active ? '结束录音' : '开始说话';
+  $('mic-button').disabled = voice.processing || !renderReady;
   $('stop-button').disabled = !busy && !voice.active && !voice.playing && !voice.processing;
   $('send-button').disabled = busy;
-  $('preview-button').disabled = busy || voice.active || voice.processing;
+  $('preview-button').disabled = busy || voice.active || voice.processing || !renderReady;
+  document.body.dataset.activity = voice.active ? 'listening' : busy || voice.playing ? 'responding' : 'idle';
 }
 const voice = new VoiceController({
   onTranscript: text => { $('message').value = text; sendMessage(text); },
@@ -18,16 +25,63 @@ const voice = new VoiceController({
   onSpeaking: speaking => { face?.setSpeaking(speaking); updateControls(); },
 });
 
+function selectTab(name, focus = false) {
+  tabs.forEach(tab => {
+    const selected = tab.dataset.tab === name;
+    tab.setAttribute('aria-selected', String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+    if (selected && focus) tab.focus();
+  });
+  Object.entries(tabPanels).forEach(([key, id]) => { $(id).hidden = key !== name; });
+}
+tabs.forEach((tab, index) => {
+  tab.addEventListener('click', () => {
+    selectTab(tab.dataset.tab);
+    if (tab.dataset.tab === 'model' && !configLoaded) loadConnectionForm();
+  });
+  tab.addEventListener('keydown', event => {
+    let next;
+    if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+    if (event.key === 'ArrowLeft') next = (index + tabs.length - 1) % tabs.length;
+    if (event.key === 'Home') next = 0;
+    if (event.key === 'End') next = tabs.length - 1;
+    if (next === undefined) return;
+    event.preventDefault();
+    selectTab(tabs[next].dataset.tab, true);
+    if (tabs[next].dataset.tab === 'model' && !configLoaded) loadConnectionForm();
+  });
+});
+$('control-panel').addEventListener('toggle', event => {
+  const open = event.newState === 'open';
+  $('controls-button').setAttribute('aria-expanded', String(open));
+  $('controls-button').setAttribute('aria-label', open ? '关闭控制中心' : '打开控制中心');
+  if (open && !configLoaded) loadConnectionForm();
+});
+
 async function api(url, options) {
   const response = await fetch(url, options);
   const result = await response.json();
-  if (!response.ok) throw new Error(result.error || `请求失败：${response.status}`);
+  if (!response.ok) throw new Error(result.error || '请求失败：' + response.status);
   return result;
 }
-
 async function refreshConnection() {
   const state = await api('/api/status');
-  $('connection-status').textContent = state.chatConfigured ? `已配置 ${state.provider === 'ollama' ? 'Ollama' : '兼容 API'} · ${state.model}` : '模型未连接 · 等待 Windows 配置';
+  $('connection-status').textContent = state.chatConfigured ? (state.provider === 'ollama' ? 'Ollama' : 'API') + ' · ' + state.model : '尚未连接';
+  $('connection-status').title = state.chatConfigured ? '模型配置已保存，连接状态以实际回复为准。' : '在模型页连接你的服务。';
+}
+async function loadConnectionForm() {
+  try {
+    config = await api('/api/config');
+    $('provider').value = config.chat.provider;
+    $('model-url').value = config.chat.baseUrl;
+    $('model-name').value = config.chat.model;
+    $('model-key-env').value = config.chat.apiKeyEnv;
+    $('stt-url').value = config.transcription.baseUrl;
+    $('stt-model').value = config.transcription.model;
+    $('stt-key-env').value = config.transcription.apiKeyEnv;
+    $('settings-status').textContent = '';
+    configLoaded = true;
+  } catch (error) { $('settings-status').textContent = error.message; }
 }
 
 async function sendMessage(text) {
@@ -38,7 +92,7 @@ async function sendMessage(text) {
   const message = { role: 'user', content: text };
   $('last-user').textContent = text;
   busy = true;
-  status('等待模型回应');
+  status('等待回应');
   const controller = new AbortController();
   requestController = controller;
   try {
@@ -53,75 +107,86 @@ async function sendMessage(text) {
   } catch (error) { if (generation === requestGeneration && error.name !== 'AbortError') status(error.message); }
   finally { if (generation === requestGeneration) { busy = false; requestController = null; updateControls(); } }
 }
-
 $('message-form').addEventListener('submit', event => { event.preventDefault(); sendMessage($('message').value); });
 $('mic-button').addEventListener('click', async () => {
   if (voice.active) { voice.finishRecording(); updateControls(); return; }
-  if (busy) { status('先点“停止回应”，再开始说话。'); return; }
+  if (busy) { status('先停止当前回应，再开始说话。'); return; }
   try { await voice.start($('recognition-mode').value); updateControls(); }
-  catch (error) { status(error.name === 'NotAllowedError' ? '麦克风未获授权，请在浏览器中允许此页面使用麦克风。' : error.message); }
+  catch (error) { status(error.name === 'NotAllowedError' ? '请在浏览器中允许此页面使用麦克风。' : error.message); }
 });
-$('stop-button').addEventListener('click', () => { ++requestGeneration; requestController?.abort(); requestController = null; voice.cancel(); busy = false; status('已停止'); });
+$('stop-button').addEventListener('click', () => {
+  ++requestGeneration;
+  requestController?.abort();
+  requestController = null;
+  voice.cancel();
+  busy = false;
+  status('已停止');
+});
 $('preview-button').addEventListener('click', async () => {
   $('reply').textContent = 'Hello, human.';
   $('last-user').textContent = '';
-  try { await voice.previewSourceAudio(); } catch { status('音频未能播放，请再点一次预览。'); }
+  try { await voice.previewSourceAudio(); }
+  catch { status('音频未能播放，请再点一次预览。'); }
 });
 $('recognition-mode').addEventListener('change', () => {
   voice.cancel();
-  $('recognition-note').textContent = $('recognition-mode').value === 'browser' ? '浏览器识别可能使用浏览器厂商的在线语音服务。中文语音由浏览器提供。' : 'Windows 识别服务需要单独配置。录音仅在按下“开始说话”后启动。';
+  $('recognition-note').textContent = $('recognition-mode').value === 'browser'
+    ? '浏览器识别可能使用在线语音服务。'
+    : '录音仅在你按下“开始说话”后启动。';
   status('就绪');
 });
-
 function formConfig() {
-  return { chat: { ...config.chat, provider: $('provider').value, baseUrl: $('model-url').value.trim(), model: $('model-name').value.trim(), apiKeyEnv: $('model-key-env').value.trim() }, transcription: { ...config.transcription, baseUrl: $('stt-url').value.trim(), model: $('stt-model').value.trim(), apiKeyEnv: $('stt-key-env').value.trim() } };
+  return {
+    chat: { ...config.chat, provider: $('provider').value, baseUrl: $('model-url').value.trim(), model: $('model-name').value.trim(), apiKeyEnv: $('model-key-env').value.trim() },
+    transcription: { ...config.transcription, baseUrl: $('stt-url').value.trim(), model: $('stt-model').value.trim(), apiKeyEnv: $('stt-key-env').value.trim() },
+  };
 }
-
-$('settings-button').addEventListener('click', async () => {
-  try {
-    config = await api('/api/config');
-    $('provider').value = config.chat.provider;
-    $('model-url').value = config.chat.baseUrl;
-    $('model-name').value = config.chat.model;
-    $('model-key-env').value = config.chat.apiKeyEnv;
-    $('stt-url').value = config.transcription.baseUrl;
-    $('stt-model').value = config.transcription.model;
-    $('stt-key-env').value = config.transcription.apiKeyEnv;
-    $('settings-status').textContent = '';
-    $('settings').showModal();
-  } catch (error) { status(error.message); }
-});
-$('close-settings').addEventListener('click', () => $('settings').close());
 $('settings-form').addEventListener('submit', async event => {
   event.preventDefault();
   try {
+    if (!configLoaded) await loadConnectionForm();
     const next = formConfig();
     await api('/api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) });
     config = next;
     await refreshConnection();
-    $('settings').close();
-    status('配置已保存；请在 Windows 上验证模型连接。');
+    selectTab('chat');
+    status('配置已保存');
   } catch (error) { $('settings-status').textContent = error.message; }
 });
 $('load-models').addEventListener('click', async () => {
   $('settings-status').textContent = '读取模型列表…';
   $('load-models').disabled = true;
   try {
+    if (!configLoaded) await loadConnectionForm();
     config = formConfig();
     await api('/api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
     const result = await api('/api/models');
     $('model-names').replaceChildren(...result.models.map(name => { const option = document.createElement('option'); option.value = name; return option; }));
     if (!$('model-name').value && result.models.length) $('model-name').value = result.models[0];
-    $('settings-status').textContent = result.models.length ? `读取到 ${result.models.length} 个模型。请保存配置后测试。` : '服务可连接，模型列表为空。';
+    $('settings-status').textContent = result.models.length ? '已读取 ' + result.models.length + ' 个模型' : '模型列表为空';
   } catch (error) { $('settings-status').textContent = error.message; }
   finally { $('load-models').disabled = false; }
 });
 
 try {
   const palettes = await api('/config/palettes.json');
-  face = await new FaceStage($('face-stage'), palettes.amethyst).init();
-  $('theme').addEventListener('change', () => face.setTheme(palettes[$('theme').value]));
+  const themes = {
+    ...palettes,
+    frost: { ...palettes.sapphire, faceColor0: '#4d6c86', faceColor1: '#d5edf8', faceColorSpeech: '#c2f1f4' },
+  };
+  face = await new FaceStage($('face-stage'), themes.frost).init();
+  renderReady = true;
+  const setTheme = key => {
+    face.setTheme(themes[key]);
+    $('theme').value = key;
+    document.querySelectorAll('[data-theme]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.theme === key)));
+  };
+  $('theme').addEventListener('change', () => setTheme($('theme').value));
+  document.querySelectorAll('[data-theme]').forEach(button => button.addEventListener('click', () => setTheme(button.dataset.theme)));
   status('就绪');
   await refreshConnection();
-} catch (error) { status(error.message); $('mic-button').disabled = true; $('preview-button').disabled = true; }
+} catch (error) {
+  status(error.message);
+  $('control-panel').showPopover();
+}
 window.addEventListener('pagehide', () => { voice.cancel(); face?.dispose(); });

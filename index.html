@@ -3,56 +3,96 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#03060a">
   <title>人脸语音对话 · Pioneer Face</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <main>
-    <div id="face-stage" aria-label="粒子人脸动画"></div>
-    <header>
-      <div><h1>人脸语音对话</h1><p id="connection-status">模型未连接</p></div>
-      <button id="settings-button" type="button">连接模型</button>
-    </header>
-    <section class="conversation" aria-label="对话内容">
-      <p id="last-user" class="last-user"></p>
-      <p id="reply" aria-live="polite">先听听这个人脸的声音。</p>
-    </section>
-    <section class="controls" aria-label="语音控制">
-      <p id="activity" role="status">正在载入人脸</p>
-      <div class="voice-controls">
-        <button id="mic-button" class="primary" type="button">开始说话</button>
-        <button id="stop-button" type="button" disabled>停止回应</button>
-        <button id="preview-button" type="button">原站语音预览</button>
+    <h1 class="visually-hidden">人脸语音对话</h1>
+    <div id="face-stage" role="img" aria-label="全屏粒子人脸动画"></div>
+    <button id="controls-button" class="control-trigger glass" type="button" popovertarget="control-panel" aria-controls="control-panel" aria-expanded="false" aria-label="打开控制中心" title="控制中心">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h8m4 0h4M4 17h3m4 0h9"/><circle cx="14" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+      <span class="state-light" aria-hidden="true"></span>
+    </button>
+
+    <section id="control-panel" class="control-panel glass" popover="auto" role="dialog" aria-label="控制中心">
+      <div class="panel-heading">
+        <h2>控制中心</h2>
+        <p id="connection-status">尚未连接</p>
       </div>
-      <form id="message-form" class="message-form">
-        <label class="visually-hidden" for="message">文字输入</label>
-        <input id="message" autocomplete="off" placeholder="也可以输入文字，测试模型连接…" maxlength="8000">
-        <button type="submit" id="send-button">发送</button>
-      </form>
-      <div class="options">
-        <label>语音识别 <select id="recognition-mode"><option value="local">Windows 识别服务</option><option value="browser">浏览器识别</option></select></label>
-        <label><input id="voice-output" type="checkbox" checked> 语音回应</label>
-        <label>人脸颜色 <select id="theme"><option value="amethyst">紫晶</option><option value="sapphire">蓝宝石</option><option value="emerald">翡翠</option><option value="ruby">红宝石</option><option value="amber">琥珀</option><option value="gold">金色</option></select></label>
+      <div class="segmented" role="tablist" aria-label="控制面板">
+        <button id="tab-chat" type="button" role="tab" data-tab="chat" aria-selected="true" aria-controls="panel-chat">对话</button>
+        <button id="settings-button" type="button" role="tab" data-tab="model" aria-selected="false" aria-controls="settings" tabindex="-1">模型</button>
+        <button id="tab-appearance" type="button" role="tab" data-tab="appearance" aria-selected="false" aria-controls="panel-appearance" tabindex="-1">外观</button>
       </div>
-      <p id="recognition-note" class="note">Windows 识别服务需要单独配置。录音仅在按下“开始说话”后启动。</p>
+
+      <section id="panel-chat" class="tab-content" role="tabpanel" aria-labelledby="tab-chat">
+        <div class="conversation" aria-label="对话内容">
+          <p id="last-user" class="last-user"></p>
+          <p id="reply" aria-live="polite">从一句话开始。</p>
+        </div>
+        <p id="activity" role="status">正在载入人脸</p>
+        <div class="voice-controls">
+          <button id="mic-button" class="primary" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M6 11v1a6 6 0 0 0 12 0v-1M12 18v3m-3 0h6"/></svg>
+            <span id="mic-label">开始说话</span>
+          </button>
+          <button id="stop-button" type="button" disabled>停止回应</button>
+        </div>
+        <form id="message-form" class="message-form">
+          <label class="visually-hidden" for="message">文字输入</label>
+          <input id="message" autocomplete="off" placeholder="输入一句话…" maxlength="8000">
+          <button type="submit" id="send-button" class="send-button" aria-label="发送"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></button>
+        </form>
+        <div class="chat-options">
+          <button id="preview-button" class="quiet-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4m4-8v12m4-15v18m4-15v12m4-8v4"/></svg>原站语音预览</button>
+          <label class="switch-label">语音回应 <input id="voice-output" class="switch" type="checkbox" checked></label>
+        </div>
+      </section>
+
+      <section id="settings" class="tab-content" role="tabpanel" aria-labelledby="settings-button" hidden>
+        <form id="settings-form" class="settings-form">
+          <label>对话接口 <select id="provider"><option value="ollama">Ollama</option><option value="compatible">兼容 API · LM Studio</option></select></label>
+          <label>服务地址 <input id="model-url" type="url" required placeholder="http://127.0.0.1:11434"></label>
+          <label>模型名称 <input id="model-name" list="model-names" placeholder="选择或填写模型名"><datalist id="model-names"></datalist></label>
+          <button id="load-models" class="quiet-button" type="button">读取已安装模型 <span aria-hidden="true">↗</span></button>
+          <div class="field-divider"></div>
+          <label>语音识别 <select id="recognition-mode"><option value="local">本地识别服务</option><option value="browser">浏览器识别</option></select></label>
+          <p id="recognition-note" class="note">录音仅在你按下“开始说话”后启动。</p>
+          <details class="advanced">
+            <summary>授权与识别服务</summary>
+            <div class="advanced-fields">
+              <label>对话授权环境变量名 <input id="model-key-env" placeholder="MODEL_API_KEY"></label>
+              <label>识别服务地址 <input id="stt-url" type="url" placeholder="支持 /v1/audio/transcriptions"></label>
+              <label>识别模型名称 <input id="stt-model" placeholder="语音识别模型名"></label>
+              <label>识别授权环境变量名 <input id="stt-key-env" placeholder="STT_API_KEY"></label>
+              <p class="note">授权只填写环境变量名称，密钥由服务端环境提供。</p>
+            </div>
+          </details>
+          <p id="settings-status" role="status"></p>
+          <button type="submit" class="primary">保存配置</button>
+        </form>
+      </section>
+
+      <section id="panel-appearance" class="tab-content appearance-panel" role="tabpanel" aria-labelledby="tab-appearance" hidden>
+        <div class="appearance-heading"><h3>光的颜色</h3><p>让人脸成为唯一的主视觉。</p></div>
+        <select id="theme" hidden aria-label="人脸颜色">
+          <option value="frost" selected>冰白</option><option value="amethyst">紫晶</option><option value="sapphire">蓝宝石</option><option value="emerald">翡翠</option><option value="ruby">红宝石</option><option value="amber">琥珀</option><option value="gold">金色</option>
+        </select>
+        <div class="theme-grid" role="group" aria-label="人脸颜色">
+          <button type="button" class="theme-chip" data-theme="frost" aria-pressed="true"><span style="--swatch:#d4eefb"></span>冰白</button>
+          <button type="button" class="theme-chip" data-theme="amethyst" aria-pressed="false"><span style="--swatch:#a986ff"></span>紫晶</button>
+          <button type="button" class="theme-chip" data-theme="sapphire" aria-pressed="false"><span style="--swatch:#65b9f5"></span>蓝宝石</button>
+          <button type="button" class="theme-chip" data-theme="emerald" aria-pressed="false"><span style="--swatch:#6ce5c0"></span>翡翠</button>
+          <button type="button" class="theme-chip" data-theme="ruby" aria-pressed="false"><span style="--swatch:#f57e99"></span>红宝石</button>
+          <button type="button" class="theme-chip" data-theme="amber" aria-pressed="false"><span style="--swatch:#f3b27c"></span>琥珀</button>
+          <button type="button" class="theme-chip" data-theme="gold" aria-pressed="false"><span style="--swatch:#e4ca85"></span>金色</button>
+        </div>
+        <p class="note">人脸会随窗口大小自动贴合。设置收起后，画面只留下人脸。</p>
+      </section>
     </section>
   </main>
-  <dialog id="settings">
-    <form id="settings-form">
-      <div class="dialog-header"><h2>连接模型</h2><button type="button" id="close-settings">关闭</button></div>
-      <p class="note">填写 Windows 的本地服务或兼容 API 地址。密钥由服务端环境提供。</p>
-      <label>对话接口 <select id="provider"><option value="ollama">Ollama</option><option value="compatible">兼容 API（含 LM Studio）</option></select></label>
-      <label>模型服务地址 <input id="model-url" type="url" required></label>
-      <label>模型名称 <input id="model-name" list="model-names" placeholder="填写 Windows 上实际安装的模型名"><datalist id="model-names"></datalist></label>
-      <label>授权环境变量名（可选）<input id="model-key-env" placeholder="例如 MODEL_API_KEY；不要填写密钥值"></label>
-      <button id="load-models" type="button">读取已安装模型</button>
-      <label>语音识别服务地址（可选）<input id="stt-url" type="url" placeholder="兼容 /v1/audio/transcriptions 的服务"></label>
-      <label>语音识别模型名（可选）<input id="stt-model" placeholder="识别服务提供的模型名"></label>
-      <label>识别授权环境变量名（可选）<input id="stt-key-env" placeholder="例如 STT_API_KEY；不要填写密钥值"></label>
-      <p id="settings-status" role="status"></p>
-      <button type="submit" class="primary">保存连接配置</button>
-    </form>
-  </dialog>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

@@ -5,6 +5,10 @@ import { fileURLToPath } from 'node:url';
 import { validateConfig, chatReply, listModels, transcribe } from './src/model-adapter.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
+try { process.loadEnvFile(path.join(root, '.env')); }
+catch (error) {
+  if (error.code !== 'ENOENT') throw new Error('无法读取本地 .env，请检查文件权限和格式。');
+}
 const args = process.argv.slice(2);
 const valueOf = (name, fallback) => args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
 const port = Number(valueOf('--port', process.env.PORT || 4173));

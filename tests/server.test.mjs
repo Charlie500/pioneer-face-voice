@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import http from 'node:http';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 
-test('local server serves the face app, protects private files, and validates saved settings', async t => {
+test('local server protects private files, saves settings, and authenticates using its local env file', async t => {
   const project = new URL('../', import.meta.url);
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'face-voice-server-'));
   await fs.mkdir(path.join(root, 'src'));
@@ -19,8 +20,22 @@ test('local server serves the face app, protects private files, and validates sa
     chat: { provider: 'ollama', baseUrl: 'http://127.0.0.1:11434', model: '', apiKeyEnv: '', systemPrompt: 'Test assistant' },
     transcription: { baseUrl: '', model: '', apiKeyEnv: '', language: 'zh' },
   }));
-  await fs.writeFile(path.join(root, '.env'), 'PRIVATE_FILE_VALUE=must-not-be-served');
-  const child = spawn(process.execPath, ['server.mjs', '--port', '0'], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] });
+  await fs.writeFile(path.join(root, '.env'), 'FACE_VOICE_TEST_API_KEY=fixture-model-key\n');
+  let upstreamAuthorization;
+  let upstreamMessages;
+  const upstream = http.createServer(async (request, response) => {
+    upstreamAuthorization = request.headers.authorization;
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    upstreamMessages = JSON.parse(Buffer.concat(chunks).toString()).messages;
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify({ choices: [{ message: { content: 'Authenticated fixture reply' } }] }));
+  });
+  await new Promise(resolve => upstream.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise(resolve => upstream.close(resolve)));
+  const childEnv = { ...process.env };
+  delete childEnv.FACE_VOICE_TEST_API_KEY;
+  const child = spawn(process.execPath, ['server.mjs', '--port', '0'], { cwd: root, env: childEnv, stdio: ['ignore', 'pipe', 'pipe'] });
   t.after(async () => {
     if (child.exitCode === null) { const exited = once(child, 'exit'); child.kill(); await exited; }
     await fs.rm(root, { recursive: true, force: true });
@@ -47,11 +62,16 @@ test('local server serves the face app, protects private files, and validates sa
   const defaults = await fetch(`${base}/api/config`).then(r => r.json());
   const blocked = await fetch(`${base}/api/config`, { method: 'PUT', headers: { Origin: 'https://outside.example', 'Content-Type': 'application/json' }, body: JSON.stringify(defaults) });
   assert.equal(blocked.status, 403);
-  const next = { ...defaults, chat: { ...defaults.chat, provider: 'compatible', baseUrl: 'http://127.0.0.1:1234/v1', model: 'handoff-model' } };
+  const next = { ...defaults, chat: { ...defaults.chat, provider: 'compatible', baseUrl: `http://127.0.0.1:${upstream.address().port}/v1`, model: 'handoff-model', apiKeyEnv: 'FACE_VOICE_TEST_API_KEY' } };
   const saved = await fetch(`${base}/api/config`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) });
   assert.equal(saved.status, 200);
   const stored = JSON.parse(await fs.readFile(path.join(root, 'config/models.local.json'), 'utf8'));
   assert.equal(stored.chat.model, 'handoff-model');
   assert.deepEqual(await fetch(`${base}/api/config`).then(r => r.json()), stored);
+  const chat = await fetch(`${base}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'Hello fixture' }] }) });
+  assert.equal(chat.status, 200);
+  assert.deepEqual(await chat.json(), { reply: 'Authenticated fixture reply' });
+  assert.equal(upstreamAuthorization, 'Bearer fixture-model-key');
+  assert.deepEqual(upstreamMessages, [{ role: 'system', content: 'Test assistant' }, { role: 'user', content: 'Hello fixture' }]);
   assert.equal((await fetch(`${base}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'system', content: 'bad role' }] }) })).status, 400);
 });

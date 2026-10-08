@@ -1,9 +1,9 @@
 {
   "chat": {
-    "provider": "ollama",
-    "baseUrl": "http://127.0.0.1:11434",
-    "model": "",
-    "apiKeyEnv": "",
+    "provider": "compatible",
+    "baseUrl": "http://192.168.10.102:8080/v1",
+    "model": "qwen3.6-35b-iq2_m",
+    "apiKeyEnv": "MODEL_API_KEY",
     "systemPrompt": "你是一个温和、直接的中文语音助手。适合口头交流，每次回复尽量简短，不使用 Markdown，不虚构执行结果。"
   },
   "transcription": {

@@ -21,6 +21,30 @@ node server.mjs
 
 替代启动：双击 `scripts/start.cmd`，或执行 `./scripts/start.ps1 -OpenBrowser`。端口冲突时可执行 `node server.mjs --port 4174`，同时改用对应页面地址。若 PowerShell 禁止运行脚本，直接使用 CMD 或 Node 命令即可。
 
+### 本次已选的局域网模型
+
+Mac 当前项目和仓库默认配置 `config/models.json` 已保存这组设置；Windows 新克隆即可使用：
+
+| 设置 | 已选值 |
+| --- | --- |
+| 对话接口 | 兼容 API |
+| 服务地址 | `http://192.168.10.102:8080/v1` |
+| 模型名称 | `qwen3.6-35b-iq2_m` |
+| 对话授权环境变量名 | `MODEL_API_KEY` |
+
+该服务的 `/v1/models` 返回 HTTP 200，模型确实出现在列表中；无密钥的 `/v1/chat/completions` 返回 HTTP 401 `Invalid API Key`。需要使用该服务已有的 API Key，尚未验证带授权的真实回复。
+
+在 Windows PowerShell 的仓库根目录运行。若服务器已启动，先在其终端按 Ctrl+C。下面的输入会遮蔽密钥，仅为当前终端进程设置授权：
+
+```powershell
+$modelServiceSecret = Read-Host '输入这个模型服务的 API Key' -AsSecureString
+$env:MODEL_API_KEY = [System.Net.NetworkCredential]::new('', $modelServiceSecret).Password
+Remove-Variable modelServiceSecret
+node server.mjs
+```
+
+若已经存在 `config/models.local.json`，它会优先于仓库默认配置；请在控制中心“模型”中核对或修改为表格中的值。必须由设置了 `MODEL_API_KEY` 的同一个终端启动 Node，已经运行的进程不会自动获得后来设置的变量。成功返回真实回复后再记录模型通过。
+
 **先验收人脸：** 打开页面应看到随窗口调整大小的完整粒子头部，画布覆盖整个视口，默认只有右上角一个控制按钮。展开按钮，在“对话”中点击“原站语音预览”应播放短音频、出现“播放原站语音”并触发波纹/颜色变化。收起面板应继续播放；重新展开后点击“停止回应”应立即停声，人脸回到待机。在“外观”中切换“蓝宝石”“翡翠”等配色应即时生效。
 
 右上角按钮、面板外部点击、Esc 均可收起控制中心；分栏支持方向键切换。窄屏下，较长的模型设置可以在面板内部滚动。

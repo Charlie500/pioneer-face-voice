@@ -39,6 +39,8 @@
 
 ## 仍需 Windows 实测
 
+用户提供的局域网地址 `http://192.168.10.102:8080/v1` 已完成连通性检查：模型列表 HTTP 200，返回 `qwen3.6-35b-iq2_m`；无授权的真实对话接口 HTTP 401 `Invalid API Key`。当前本地项目与仓库默认配置 `config/models.json` 已选择兼容 API、该地址和模型，并配置授权变量名 `MODEL_API_KEY`。启动项目的环境尚未提供此变量，不能记为真实对话已通过。新克隆使用仓库默认配置；已有本地配置优先。服务端测试使用独立的未配置模型样例，不会访问用户的局域网服务。
+
 实际模型推理、两轮上下文、录音与中文识别、真实中文发声、GPU/显卡驱动表现，以及全链路离线能力均未在本次 Mac 工作中验证。Windows 启动/检查脚本已经提供，真实结果请填写 `WINDOWS_TEST_RECORD.md`。
 
 Windows GitHub Actions 配置保留在 `docs/windows-ci.example.yml`，当前未启用、未运行。当前 GitHub CLI 凭据不包含 `workflow` 写入权限，故没有把模板放入 `.github/workflows/`。Windows 接手后若启用它，仅运行上述模拟测试，不下载或启动大模型；不能把本地测试结果视为 CI 结果。

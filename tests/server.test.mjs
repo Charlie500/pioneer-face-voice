@@ -11,9 +11,14 @@ test('local server serves the face app, protects private files, and validates sa
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'face-voice-server-'));
   await fs.mkdir(path.join(root, 'src'));
   await fs.mkdir(path.join(root, 'config'));
-  for (const name of ['server.mjs', 'package.json', 'index.html', 'style.css', 'src/model-adapter.mjs', 'config/models.json']) {
+  for (const name of ['server.mjs', 'package.json', 'index.html', 'style.css', 'src/model-adapter.mjs']) {
     await fs.copyFile(new URL(name, project), path.join(root, name));
   }
+  // Keep this fixture unconfigured and independent of the user's real model service.
+  await fs.writeFile(path.join(root, 'config/models.json'), JSON.stringify({
+    chat: { provider: 'ollama', baseUrl: 'http://127.0.0.1:11434', model: '', apiKeyEnv: '', systemPrompt: 'Test assistant' },
+    transcription: { baseUrl: '', model: '', apiKeyEnv: '', language: 'zh' },
+  }));
   await fs.writeFile(path.join(root, '.env'), 'PRIVATE_FILE_VALUE=must-not-be-served');
   const child = spawn(process.execPath, ['server.mjs', '--port', '0'], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] });
   t.after(async () => {

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>人脸语音对话 · Pioneer Face</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <div id="face-stage" aria-label="粒子人脸动画"></div>
+    <header>
+      <div><h1>人脸语音对话</h1><p id="connection-status">模型未连接</p></div>
+      <button id="settings-button" type="button">连接模型</button>
+    </header>
+    <section class="conversation" aria-label="对话内容">
+      <p id="last-user" class="last-user"></p>
+      <p id="reply" aria-live="polite">先听听这个人脸的声音。</p>
+    </section>
+    <section class="controls" aria-label="语音控制">
+      <p id="activity" role="status">正在载入人脸</p>
+      <div class="voice-controls">
+        <button id="mic-button" class="primary" type="button">开始说话</button>
+        <button id="stop-button" type="button" disabled>停止回应</button>
+        <button id="preview-button" type="button">原站语音预览</button>
+      </div>
+      <form id="message-form" class="message-form">
+        <label class="visually-hidden" for="message">文字输入</label>
+        <input id="message" autocomplete="off" placeholder="也可以输入文字，测试模型连接…" maxlength="8000">
+        <button type="submit" id="send-button">发送</button>
+      </form>
+      <div class="options">
+        <label>语音识别 <select id="recognition-mode"><option value="local">Windows 识别服务</option><option value="browser">浏览器识别</option></select></label>
+        <label><input id="voice-output" type="checkbox" checked> 语音回应</label>
+        <label>人脸颜色 <select id="theme"><option value="amethyst">紫晶</option><option value="sapphire">蓝宝石</option><option value="emerald">翡翠</option><option value="ruby">红宝石</option><option value="amber">琥珀</option><option value="gold">金色</option></select></label>
+      </div>
+      <p id="recognition-note" class="note">Windows 识别服务需要单独配置。录音仅在按下“开始说话”后启动。</p>
+    </section>
+  </main>
+  <dialog id="settings">
+    <form id="settings-form">
+      <div class="dialog-header"><h2>连接模型</h2><button type="button" id="close-settings">关闭</button></div>
+      <p class="note">填写 Windows 的本地服务或兼容 API 地址。密钥由服务端环境提供。</p>
+      <label>对话接口 <select id="provider"><option value="ollama">Ollama</option><option value="compatible">兼容 API（含 LM Studio）</option></select></label>
+      <label>模型服务地址 <input id="model-url" type="url" required></label>
+      <label>模型名称 <input id="model-name" list="model-names" placeholder="填写 Windows 上实际安装的模型名"><datalist id="model-names"></datalist></label>
+      <label>授权环境变量名（可选）<input id="model-key-env" placeholder="例如 MODEL_API_KEY；不要填写密钥值"></label>
+      <button id="load-models" type="button">读取已安装模型</button>
+      <label>语音识别服务地址（可选）<input id="stt-url" type="url" placeholder="兼容 /v1/audio/transcriptions 的服务"></label>
+      <label>语音识别模型名（可选）<input id="stt-model" placeholder="识别服务提供的模型名"></label>
+      <label>识别授权环境变量名（可选）<input id="stt-key-env" placeholder="例如 STT_API_KEY；不要填写密钥值"></label>
+      <p id="settings-status" role="status"></p>
+      <button type="submit" class="primary">保存连接配置</button>
+    </form>
+  </dialog>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+.env
+.env.*
+node_modules/
+work/
+*.log
+config/models.local.json
+test-results/
+.DS_Store

@@ -1,0 +1,16 @@
+{
+  "origin": "https://preparetopioneer.com/",
+  "capturedAt": "2026-10-09",
+  "sourceBundle": "entry.3e07ed2f.js",
+  "faceClass": "Tz",
+  "faceShader": "FE",
+  "retainedRuntimeDeclarations": 548,
+  "runtimeBytes": 133020,
+  "overrides": [
+    "xe",
+    "je",
+    "vi"
+  ],
+  "publicRepositoryFound": false,
+  "originalDevelopmentSourceRecovered": false
+}

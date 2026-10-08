@@ -1,0 +1,61 @@
+{
+  "origin": "https://preparetopioneer.com/",
+  "capturedAt": "2026-10-09",
+  "licenseEstablished": false,
+  "files": [
+    {
+      "localPath": "assets/face/color.jpg",
+      "sourceUrl": "https://preparetopioneer.com/glxp/textures/face/1024/tex-chat-woman-5.jpg.jpg",
+      "bytes": 318134,
+      "sha256": "2fe8b57c1e4ff495f32925b5277790b2dfd568b09f4a6d22e89aade88d89a2c2"
+    },
+    {
+      "localPath": "assets/face/depth.jpg",
+      "sourceUrl": "https://preparetopioneer.com/glxp/textures/face/1024/tex-chat-woman-depth-2.jpg.jpg",
+      "bytes": 38338,
+      "sha256": "9a3a768e942504c558388c88660739c61a4e069adfca28319fe74d6e697a5cbc"
+    },
+    {
+      "localPath": "assets/audio/c_hello.mp3",
+      "sourceUrl": "https://preparetopioneer.com/assets/audios/c_hello.mp3",
+      "bytes": 24450,
+      "sha256": "d0ede15feb8c8b73016d2b3b7fe117fbe307ded9087cb0e0d15776254f98967c"
+    },
+    {
+      "localPath": "reference/entry.3e07ed2f.js",
+      "sourceUrl": "https://preparetopioneer.com/_nuxt/entry.3e07ed2f.js",
+      "bytes": 711450,
+      "sha256": "8d7f07e51b8b5cb981d5893a6436e3f3834cf38d45da6208f546f11e190d46f8"
+    },
+    {
+      "localPath": "reference/experience.08bf69e4.js",
+      "sourceUrl": "https://preparetopioneer.com/_nuxt/experience.08bf69e4.js",
+      "bytes": 58472,
+      "sha256": "0651b731c5e1cd2ab990b75b66b1226b5883f88520ec8e79bff74db66bd38ac0"
+    },
+    {
+      "localPath": "reference/useLogic.3fa0afca.js",
+      "sourceUrl": "https://preparetopioneer.com/_nuxt/useLogic.3fa0afca.js",
+      "bytes": 10593,
+      "sha256": "2802d0820857be825ab543dfd933e74d159464e05ecc776dafdc5c88f88d9064"
+    },
+    {
+      "localPath": "reference/index.html",
+      "sourceUrl": "https://preparetopioneer.com/",
+      "bytes": 4049,
+      "sha256": "de9c8cda66f7d78073438f69737b28ec614630242471dc4d10d4f3b057ff1b56"
+    },
+    {
+      "localPath": "assets/fonts/maison-light.woff2",
+      "sourceUrl": "https://preparetopioneer.com/_nuxt/MaisonNeue-Light.67400499.woff2",
+      "bytes": 20292,
+      "sha256": "67400499dcc7ffa5dfa9126c7ea3ef14b86143fcf9c6ea4194d82c7c10d9acc6"
+    },
+    {
+      "localPath": "assets/fonts/fraktion-mono.woff2",
+      "sourceUrl": "https://preparetopioneer.com/_nuxt/PPFraktionMono-Regular.af13fc57.woff2",
+      "bytes": 27608,
+      "sha256": "af13fc57de2ba6ae6eff329a46af687a1d417004f83b54da83c7a0d3fce58c77"
+    }
+  ]
+}

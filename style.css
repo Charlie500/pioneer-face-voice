@@ -65,6 +65,11 @@ select option { color: #e9f1f8; background: #131c26; }
 .send-button { border: 1px solid #ffffff18; background: #ffffff0b; border-radius: 10px; width: 33px; height: 33px; display: grid; place-items: center; padding: 0; }
 .send-button svg { width: 18px; height: 18px; }
 .chat-options { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.live-options { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 15px 1px 9px; }
+.live-tuning { margin-top: 10px; padding-top: 10px; }
+.live-tuning label, #tts-fields label { display: flex; flex-direction: column; gap: 7px; color: var(--muted); font-size: 12px; }
+#tts-fields { padding-top: 0; gap: 12px; }
+#tts-status:empty, #tts-note:empty { display: none; }
 .quiet-button { border: 0; background: transparent; color: var(--muted); font-size: 12px; padding: 4px 0; display: inline-flex; align-items: center; gap: 6px; }
 .quiet-button:hover { background: transparent; color: #f3f8fc; border-color: transparent; }
 .quiet-button svg { width: 15px; height: 15px; }

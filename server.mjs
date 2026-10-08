@@ -2,8 +2,9 @@ import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
+import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
-import { validateConfig, chatReply, listModels, transcribe } from './src/model-adapter.mjs';
+import { validateConfig, chatReply, chatReplyStream, listModels, listSpeechModels, synthesizeSpeech, transcribe } from './src/model-adapter.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 try { process.loadEnvFile(path.join(root, '.env')); }
@@ -60,6 +61,35 @@ const server = http.createServer(async (request, response) => {
         return json(response, 200, { ok: true });
       }
       if (url.pathname === '/api/models' && request.method === 'GET') return json(response, 200, { models: await listModels(current) });
+      if (url.pathname === '/api/speech/models' && request.method === 'GET') return json(response, 200, { models: await listSpeechModels(current, controller.signal) });
+      if (url.pathname === '/api/speech' && request.method === 'POST') {
+        const data = JSON.parse((await body(request, 64000)).toString());
+        const audio = await synthesizeSpeech(current, data.text, controller.signal);
+        response.writeHead(200, { 'Content-Type': audio.type, 'Content-Length': audio.bytes.length, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+        return response.end(audio.bytes);
+      }
+      if (url.pathname === '/api/chat/stream' && request.method === 'POST') {
+        const data = JSON.parse((await body(request, 256000)).toString());
+        let reply = '';
+        const send = async (event, payload) => {
+          if (response.destroyed) return;
+          if (!response.headersSent) response.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', 'X-Accel-Buffering': 'no' });
+          if (!response.write(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`)) await once(response, 'drain', { signal: controller.signal });
+        };
+        try {
+          for await (const part of chatReplyStream(current, data.messages, controller.signal)) {
+            if (part.type === 'delta') { reply += part.text; await send('delta', { text: part.text }); }
+            else await send('meta', { streaming: part.streaming });
+          }
+          await send('done', { reply: reply.trim() });
+          return response.end();
+        } catch (error) {
+          if (response.destroyed) return;
+          if (!response.headersSent) throw error;
+          await send('error', { error: error.message });
+          return response.end();
+        }
+      }
       if (url.pathname === '/api/chat' && request.method === 'POST') {
         const data = JSON.parse((await body(request, 256000)).toString());
         return json(response, 200, { reply: await chatReply(current, data.messages, controller.signal) });

@@ -6,3 +6,6 @@ work/
 config/models.local.json
 test-results/
 .DS_Store
+.venv-tts/
+__pycache__/
+*.pyc

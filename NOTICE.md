@@ -11,6 +11,7 @@
 - `src/vendor/renderer-runtime.js`：人脸依赖的原站渲染、数学、GSAP 动画、事件辅助代码。保留发布文件中的现有版权注释。
 - `assets/face/`：原站的人脸颜色与深度 JPEG。
 - `assets/audio/c_hello.mp3`：原站短语音，供预览。
+- `assets/audio/c_journey.mp3`：从原站发布脚本指向的公开地址取得的约 5 秒开场语音，供参考音色与对比试听；`pioneer-reference.wav` 是它的单声道 24 kHz PCM 转换，不是新生成的声音。
 - `assets/fonts/`、`config/palettes.json`：原站字体与配色。
 - `reference/`：原站发布版脚本及 HTML，仅用于追溯，不由本地 Web 服务器公开提供。
 
@@ -29,3 +30,7 @@
 浏览器运行时来自官方 npm 包 `@huggingface/transformers@3.8.1`（Apache-2.0），其中还打包了 `@huggingface/jinja@0.5.3`（MIT）；ONNX Runtime Web 版本为 `1.22.0-dev.20250409-89f8206ba4`（MIT）。完整许可文本位于 `assets/speech/runtime/`。它们与原站人脸资源分别保留来源和许可，不改变原站素材的权利归属。
 
 `assets/audio/speech-test-zh.wav` 为本次生成的中文功能检查音频，测试句为“你好，我想和你聊天。请用中文介绍自己。”，使用本机系统中文 voice 合成，不包含个人录音。
+
+## 可选参考音色模型
+
+`tts/` 是新编写的本地服务适配，调用 [Qwen3-TTS 官方模型 API](https://github.com/QwenLM/Qwen3-TTS)。默认 [Qwen3-TTS-12Hz-0.6B-Base](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-Base)，可切换 1.7B Base 或本地模型目录。模型卡标注 Apache-2.0；权重未打包，用户在 Windows 首次启动时自行下载并保留相应模型许可。该模型许可不赋予原站录音新的使用权。尚未验证原站相似音色的实际效果，也没有获得原站使用的 TTS 模型或 voice ID。

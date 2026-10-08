@@ -6,13 +6,14 @@ import path from 'node:path';
 import http from 'node:http';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { readSSE } from '../src/event-stream.mjs';
 
 test('local server protects private files, saves settings, and authenticates using its local env file', async t => {
   const project = new URL('../', import.meta.url);
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'face-voice-server-'));
   await fs.mkdir(path.join(root, 'src'));
   await fs.mkdir(path.join(root, 'config'));
-  for (const name of ['server.mjs', 'package.json', 'index.html', 'style.css', 'src/model-adapter.mjs']) {
+  for (const name of ['server.mjs', 'package.json', 'index.html', 'style.css', 'src/model-adapter.mjs', 'src/event-stream.mjs']) {
     await fs.copyFile(new URL(name, project), path.join(root, name));
   }
   // Keep this fixture unconfigured and independent of the user's real model service.
@@ -23,11 +24,28 @@ test('local server protects private files, saves settings, and authenticates usi
   await fs.writeFile(path.join(root, '.env'), 'FACE_VOICE_TEST_API_KEY=fixture-model-key\n');
   let upstreamAuthorization;
   let upstreamMessages;
+  let finishStream, streamCancelled;
+  const cancelled = new Promise(resolve => { streamCancelled = resolve; });
   const upstream = http.createServer(async (request, response) => {
     upstreamAuthorization = request.headers.authorization;
+    if (request.url === '/v1/models') { response.writeHead(200, { 'Content-Type': 'application/json' }); return response.end(JSON.stringify({ data: [{ id: 'fixture-voice' }] })); }
     const chunks = [];
     for await (const chunk of request) chunks.push(chunk);
-    upstreamMessages = JSON.parse(Buffer.concat(chunks).toString()).messages;
+    const data = JSON.parse(Buffer.concat(chunks).toString());
+    if (request.url === '/v1/audio/speech') {
+      assert.equal(data.input, 'Hello voice');
+      assert.equal(data.voice, 'pioneer');
+      response.writeHead(200, { 'Content-Type': 'audio/wav' });
+      return response.end(Buffer.from('RIFF fixture WAVE'));
+    }
+    upstreamMessages = data.messages;
+    if (data.stream) {
+      response.writeHead(200, { 'Content-Type': 'text/event-stream' });
+      response.write(`data: ${JSON.stringify({ choices: [{ delta: { content: '早到的文字。' } }] })}\n\n`);
+      if (data.messages.at(-1).content === 'cancel-stream') response.on('close', streamCancelled);
+      else finishStream = () => response.end('data: [DONE]\n\n');
+      return;
+    }
     response.writeHead(200, { 'Content-Type': 'application/json' });
     response.end(JSON.stringify({ choices: [{ message: { content: 'Authenticated fixture reply' } }] }));
   });
@@ -66,7 +84,8 @@ test('local server protects private files, saves settings, and authenticates usi
   const defaults = await fetch(`${base}/api/config`).then(r => r.json());
   const blocked = await fetch(`${base}/api/config`, { method: 'PUT', headers: { Origin: 'https://outside.example', 'Content-Type': 'application/json' }, body: JSON.stringify(defaults) });
   assert.equal(blocked.status, 403);
-  const next = { ...defaults, chat: { ...defaults.chat, provider: 'compatible', baseUrl: `http://127.0.0.1:${upstream.address().port}/v1`, model: 'handoff-model', apiKeyEnv: 'FACE_VOICE_TEST_API_KEY' } };
+  const upstreamBase = `http://127.0.0.1:${upstream.address().port}/v1`;
+  const next = { ...defaults, chat: { ...defaults.chat, provider: 'compatible', baseUrl: upstreamBase, model: 'handoff-model', apiKeyEnv: 'FACE_VOICE_TEST_API_KEY' }, speech: { ...defaults.speech, provider: 'qwen', baseUrl: upstreamBase, model: 'fixture-voice', apiKeyEnv: 'FACE_VOICE_TEST_API_KEY' } };
   const saved = await fetch(`${base}/api/config`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) });
   assert.equal(saved.status, 200);
   const stored = JSON.parse(await fs.readFile(path.join(root, 'config/models.local.json'), 'utf8'));
@@ -77,5 +96,26 @@ test('local server protects private files, saves settings, and authenticates usi
   assert.deepEqual(await chat.json(), { reply: 'Authenticated fixture reply' });
   assert.equal(upstreamAuthorization, 'Bearer fixture-model-key');
   assert.deepEqual(upstreamMessages, [{ role: 'system', content: 'Test assistant' }, { role: 'user', content: 'Hello fixture' }]);
+  const streaming = await fetch(`${base}/api/chat/stream`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'stream-fixture' }] }) });
+  assert.match(streaming.headers.get('content-type'), /text\/event-stream/);
+  const events = readSSE(streaming.body);
+  assert.deepEqual(JSON.parse((await events.next()).value.data), { streaming: true });
+  assert.deepEqual(JSON.parse((await events.next()).value.data), { text: '早到的文字。' });
+  finishStream(); // The first real delta has already reached the client before completion.
+  assert.deepEqual(JSON.parse((await events.next()).value.data), { reply: '早到的文字。' });
+  assert.equal((await events.next()).done, true);
+  assert.deepEqual(await fetch(`${base}/api/speech/models`).then(r => r.json()), { models: ['fixture-voice'] });
+  const speech = await fetch(`${base}/api/speech`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: 'Hello voice' }) });
+  assert.equal(speech.headers.get('content-type'), 'audio/wav');
+  assert.equal(await speech.text(), 'RIFF fixture WAVE');
+  assert.equal(upstreamAuthorization, 'Bearer fixture-model-key');
+  const controller = new AbortController();
+  const aborting = await fetch(`${base}/api/chat/stream`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'cancel-stream' }] }), signal: controller.signal });
+  const abortedEvents = readSSE(aborting.body);
+  await abortedEvents.next();
+  await abortedEvents.next();
+  controller.abort();
+  await assert.rejects(abortedEvents.next(), { name: 'AbortError' });
+  await Promise.race([cancelled, new Promise((_, reject) => { const timer = setTimeout(() => reject(new Error('Proxy did not cancel upstream')), 2000); timer.unref(); })]);
   assert.equal((await fetch(`${base}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'system', content: 'bad role' }] }) })).status, 400);
 });

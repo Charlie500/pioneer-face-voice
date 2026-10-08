@@ -11,7 +11,7 @@
     "shaders": "node scripts/build-shaders.mjs",
     "extract": "node scripts/extract-face.mjs",
     "verify:speech": "node scripts/verify-speech-assets.mjs",
-    "test": "node --test tests/model-adapter.test.mjs tests/server.test.mjs tests/voice-state.test.mjs tests/local-speech.test.mjs"
+    "test": "node --test tests/model-adapter.test.mjs tests/server.test.mjs tests/local-speech.test.mjs tests/voice-state.test.mjs tests/realtime.test.mjs tests/reply-audio.test.mjs tests/live-state.test.mjs"
   },
   "devDependencies": {
     "acorn": "8.15.0",

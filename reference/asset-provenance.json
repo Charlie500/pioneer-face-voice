@@ -56,6 +56,19 @@
       "sourceUrl": "https://preparetopioneer.com/_nuxt/PPFraktionMono-Regular.af13fc57.woff2",
       "bytes": 27608,
       "sha256": "af13fc57de2ba6ae6eff329a46af687a1d417004f83b54da83c7a0d3fce58c77"
+    },
+    {
+      "localPath": "assets/audio/c_journey.mp3",
+      "sourceUrl": "https://preparetopioneer.com/assets/audios/c_journey.mp3",
+      "bytes": 120372,
+      "sha256": "dd92783e16aa3f49e4022d9ab8509953f1cb1172b933d05609a95444318c4cb0"
+    },
+    {
+      "localPath": "assets/audio/pioneer-reference.wav",
+      "sourceUrl": "https://preparetopioneer.com/assets/audios/c_journey.mp3",
+      "bytes": 244840,
+      "sha256": "33682a77f82481ba368aa8add61ee1ca5bc4491abe5fad13c1f0bf2c771c2f5d",
+      "derivation": "Decoded from c_journey.mp3 into mono PCM16 WAV at 24000 Hz; no cloned audio generated."
     }
   ]
 }

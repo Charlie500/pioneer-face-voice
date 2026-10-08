@@ -41,6 +41,19 @@
           </button>
           <button id="stop-button" type="button" disabled>停止回应</button>
         </div>
+        <div class="live-options">
+          <label class="switch-label">连续对话 <input id="live-mode" class="switch" type="checkbox" checked></label>
+          <label class="switch-label">语音打断 <input id="barge-in" class="switch" type="checkbox"></label>
+        </div>
+        <p id="live-note" class="note">开始后持续聆听，说完停顿即可发送；再次点击结束聊天。</p>
+        <details class="live-tuning advanced">
+          <summary>对话节奏</summary>
+          <div class="advanced-fields">
+            <label>发送前停顿 <select id="silence-duration"><option value="650">0.65 秒 · 较快</option><option value="850" selected>0.85 秒 · 自然</option><option value="1200">1.2 秒 · 从容</option></select></label>
+            <label>录音灵敏度 <select id="mic-sensitivity"><option value="0.006">较高 · 轻声</option><option value="0.012" selected>正常</option><option value="0.022">较低 · 环境较吵</option></select></label>
+            <p class="note">语音打断会检测回应期间的说话声。扬声器误触发时，可使用耳机或关闭语音打断。</p>
+          </div>
+        </details>
         <form id="message-form" class="message-form">
           <label class="visually-hidden" for="message">文字输入</label>
           <input id="message" autocomplete="off" placeholder="输入一句话…" maxlength="8000">
@@ -88,20 +101,37 @@
       <section id="panel-voice" class="tab-content" role="tabpanel" aria-labelledby="tab-voice" hidden>
         <div class="appearance-heading"><h3>选择你的声音</h3><p>先听一听，再找到适合的语气。</p></div>
         <div class="voice-settings">
+          <label for="speech-provider">声音来源</label>
+          <select id="speech-provider"><option value="system">系统音色</option><option value="qwen">本地 Qwen3-TTS · 参考音色</option><option value="compatible">TTS API／其他本地服务</option></select>
+          <div id="tts-fields" class="advanced-fields" hidden>
+            <label>语音服务地址 <input id="tts-url" type="url" placeholder="http://127.0.0.1:8090/v1"></label>
+            <label>语音模型 <input id="tts-model" list="tts-model-names"><datalist id="tts-model-names"></datalist></label>
+            <label>音色 ID <input id="tts-voice" placeholder="pioneer"></label>
+            <label id="tts-language-label">发声语言 <select id="tts-language"><option value="Chinese">中文</option><option value="English">英语</option><option value="Auto">自动</option></select></label>
+            <details class="advanced"><summary>语音服务授权</summary><div class="advanced-fields"><label>授权环境变量名称 <input id="tts-key-env" placeholder="可留空，或 TTS_API_KEY"></label></div></details>
+            <button id="check-tts" class="quiet-button" type="button">检查语音服务</button>
+            <p id="tts-note" class="note"></p>
+            <button id="compare-reference" class="quiet-button" type="button" hidden>听原站参考音频</button>
+          </div>
+          <div id="system-voice-fields" class="voice-settings">
           <label for="voice-select">回应音色</label>
           <select id="voice-select" aria-describedby="voice-list-note"><option value="">自动选择中文声音</option></select>
           <p id="voice-list-note" class="note">正在读取可用声音…</p>
+          </div>
           <label class="slider-label" for="voice-rate">语速 <output id="voice-rate-value" for="voice-rate">1.00×</output></label>
           <input id="voice-rate" type="range" min="0.7" max="1.3" step="0.05" value="1">
           <label class="slider-label" for="voice-pitch">音高 <output id="voice-pitch-value" for="voice-pitch">1.00</output></label>
           <input id="voice-pitch" type="range" min="0.8" max="1.2" step="0.05" value="1">
+          <p id="pitch-note" class="note" hidden>TTS 音色保持原始音高；语速可调。</p>
+          <button id="save-speech" class="quiet-button" type="button">保存声音来源与服务</button>
+          <p id="tts-status" class="note" role="status"></p>
           <div class="voice-controls">
             <button id="audition-voice" class="primary" type="button">试听这个声音</button>
             <button id="stop-audition" type="button" disabled>停止试听</button>
           </div>
           <p id="voice-audition-status" class="note" role="status"></p>
           <button id="reset-voice" class="quiet-button" type="button">恢复默认声音</button>
-          <p class="note">选择自动保存，用于后续聊天回应。可用音色由这台电脑和浏览器提供。</p>
+          <p id="voice-save-note" class="note">音色和语速自动保存。切换声音来源后，点击保存用于后续回应。</p>
         </div>
       </section>
 

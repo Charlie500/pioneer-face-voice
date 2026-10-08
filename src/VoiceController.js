@@ -194,10 +194,10 @@ export class VoiceController {
     window.speechSynthesis.speak(utterance);
   }
 
-  async previewSourceAudio() {
+  async previewSourceAudio(path = '/assets/audio/c_hello.mp3') {
     this.stopPlayback();
     const generation = this.playbackGeneration;
-    const audio = new Audio('/assets/audio/c_hello.mp3');
+    const audio = new Audio(path);
     this.audio = audio;
     this.playing = true;
     this.onStatus('准备播放原站语音');

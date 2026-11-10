@@ -12,6 +12,7 @@ const tabs = [...document.querySelectorAll('[data-tab]')];
 let face, config, requestController, busy = false, requestGeneration = 0, renderReady = false, configLoaded = false;
 let replyAudio, live, activeTurn, systemSpeaking = false, lastAudioError = '', liveStatus = '';
 let checkedSpeechText = '';
+let micInteracted = false;
 let auditioning = false, availableVoices = [];
 const voicePreferenceKey = 'pioneer-face-voice-v1';
 let voicePreferences = normalizeVoiceOptions();
@@ -57,17 +58,25 @@ function updateSpeechProvider() {
   $('compare-reference').hidden = provider !== 'qwen';
   $('voice-pitch').disabled = !system;
   $('pitch-note').hidden = system;
-  $('tts-note').textContent = provider === 'qwen' ? '使用随项目提供的 Windows 语音服务，以原站开场音频为参考生成相似声音。需先启动服务，实际相似度请试听。' : '连接提供 /v1/audio/speech 的服务，音色 ID 由该服务提供。';
+  $('tts-note').textContent = provider === 'qwen' ? '使用随项目提供的 Windows 语音服务，以原站开场音频为参考生成相似声音。需先启动服务，实际相似度请试听。'
+    : provider === 'compatible' && config?.speech?.style === 'future-ai' ? '低沉未来 AI 音色，由本机语音服务合成。结束聊天后可以试听。'
+    : '连接提供 /v1/audio/speech 的服务，音色 ID 由该服务提供。';
   $('voice-save-note').textContent = system ? '音色和语速自动保存。切换声音来源后，点击保存用于后续回应。' : '服务配置需要保存；试听或检查时也会保存。后续回应使用已保存的声音来源。';
   updateControls();
 }
-function speechFormConfig() {
-  return { provider: $('speech-provider').value, baseUrl: $('tts-url').value.trim(), model: $('tts-model').value.trim(), voice: $('tts-voice').value.trim(), apiKeyEnv: $('tts-key-env').value.trim(), language: $('tts-language').value };
+function speechFormConfig(current) {
+  const provider = $('speech-provider').value;
+  const baseUrl = $('tts-url').value.trim().replace(/\/+$/, '');
+  const model = $('tts-model').value.trim();
+  const voice = $('tts-voice').value.trim();
+  const sameVoice = provider === current.provider && baseUrl === current.baseUrl && model === current.model && voice === current.voice;
+  return { provider, baseUrl, model, voice, apiKeyEnv: $('tts-key-env').value.trim(), language: $('tts-language').value, style: sameVoice ? current.style : 'natural' };
 }
 async function saveSpeechConfig() {
   const current = await api('/api/config');
-  await api('/api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...current, speech: speechFormConfig() }) });
+  await api('/api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...current, speech: speechFormConfig(current.speech) }) });
   config = await api('/api/config');
+  updateSpeechProvider();
   $('tts-status').textContent = '声音配置已保存';
 }
 function updateVoiceValues() {
@@ -214,6 +223,7 @@ async function refreshConnection() {
   const state = await api('/api/status');
   $('connection-status').textContent = state.chatConfigured ? (state.provider === 'ollama' ? 'Ollama' : 'API') + ' · ' + state.model : '尚未连接';
   $('connection-status').title = state.chatConfigured ? '模型配置已保存，连接状态以实际回复为准。' : '在模型页连接你的服务。';
+  return state;
 }
 async function loadConnectionForm() {
   try {
@@ -303,16 +313,22 @@ async function sendMessage(text, source = 'typed') {
   }
 }
 $('message-form').addEventListener('submit', event => { event.preventDefault(); sendMessage($('message').value); });
-$('mic-button').addEventListener('click', async () => {
-  if (live.active || live.starting) { live.stop(); interruptReply(); status('聊天已结束，麦克风已关闭。'); return; }
-  if (voice.active) { voice.finishRecording(); updateControls(); return; }
+async function startConversation() {
   interruptReply();
   try {
     if ($('live-mode').checked) await live.start($('recognition-mode').value, liveOptions());
     else await voice.start($('recognition-mode').value, speechOptions());
     updateControls();
   }
-  catch (error) { status(error.name === 'NotAllowedError' ? '请在浏览器中允许此页面使用麦克风。' : error.message); }
+  catch (error) {
+    status(error.name === 'NotAllowedError' ? '请在地址栏允许麦克风，再点开始聊天。你也可以打字。' : error.message);
+  }
+}
+$('mic-button').addEventListener('click', () => {
+  micInteracted = true;
+  if (live.active || live.starting) { live.stop(); interruptReply(); status('聊天已结束，麦克风已关闭。'); return; }
+  if (voice.active) { voice.finishRecording(); updateControls(); return; }
+  startConversation();
 });
 $('stop-button').addEventListener('click', () => {
   interruptReply();
@@ -509,7 +525,19 @@ try {
   $('theme').addEventListener('change', () => setTheme($('theme').value));
   document.querySelectorAll('[data-theme]').forEach(button => button.addEventListener('click', () => setTheme(button.dataset.theme)));
   status('就绪');
-  await refreshConnection();
+  const state = await refreshConnection();
+  if (state.autoStartVoice && state.chatConfigured) {
+    if (!configLoaded) await loadConnectionForm();
+    if (configLoaded && !micInteracted && !busy) {
+      $('live-mode').checked = true;
+      const mode = $('recognition-mode').value;
+      if (mode === 'browser' || mode === 'local' && !state.transcriptionConfigured) $('recognition-mode').value = 'bundled';
+      updateLiveNote();
+      selectTab('chat');
+      $('control-panel').showPopover();
+      startConversation();
+    }
+  }
 } catch (error) {
   status(error.message);
   $('control-panel').showPopover();

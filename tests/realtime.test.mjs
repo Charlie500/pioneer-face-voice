@@ -26,10 +26,14 @@ test('SSE preserves split UTF-8, CRLF, comments and multi-line data; NDJSON acce
   assert.deepEqual(lines, [{ text: '你' }, { text: '好' }]);
 });
 
-test('compatible streaming exposes the first reply before upstream completion and ignores reasoning tokens', async t => {
+test('compatible streaming preserves versioned gateway paths and ignores reasoning tokens', async t => {
   let release, finished = false;
   const gate = new Promise(resolve => { release = resolve; });
   const base = await fixture(t, async (request, response) => {
+    if (request.url !== '/v2/tokenplan/personal/chat/completions') {
+      response.writeHead(404).end();
+      return;
+    }
     const chunks = []; for await (const chunk of request) chunks.push(chunk);
     const body = JSON.parse(Buffer.concat(chunks));
     assert.equal(body.stream, true);
@@ -42,7 +46,7 @@ test('compatible streaming exposes the first reply before upstream completion an
     response.end('data: {"choices":[{"delta":{"content":"第二句。"}}]}\n\ndata: [DONE]\n\n');
   });
   t.after(release);
-  const stream = chatReplyStream(settings(base), [{ role: 'user', content: '测试' }]);
+  const stream = chatReplyStream(settings(`${base}/v2/tokenplan/personal/`), [{ role: 'user', content: '测试' }]);
   assert.deepEqual((await stream.next()).value, { type: 'meta', streaming: true });
   assert.deepEqual((await stream.next()).value, { type: 'delta', text: '第一句。' });
   assert.equal(finished, false);

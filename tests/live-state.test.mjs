@@ -66,7 +66,7 @@ test('stop during delayed microphone permission closes any late granted stream',
   await start;
   assert.equal(live.active, false);
   assert.equal(env.tracks[0].stopped, true);
-  assert.equal(env.contexts[0].closed, true);
+  assert.equal(env.contexts.length, 0);
   assert.equal(env.nodes.length, 0);
 });
 

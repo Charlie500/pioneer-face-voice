@@ -57,7 +57,7 @@ button.primary:hover { background: #ffffff; border-color: #ffffff; }
 #mic-button { display: flex; align-items: center; justify-content: center; gap: 7px; }
 #mic-button svg { width: 17px; height: 17px; }
 input, select { width: 100%; min-width: 0; border: 1px solid #ffffff14; background: #03080e35; border-radius: 11px; color: #e9f1f8; padding: 11px 12px; font-size: 13px; }
-input::placeholder { color: #8695a68c; }
+input::placeholder { color: #95a6b9; }
 select { padding-right: 26px; }
 select option { color: #e9f1f8; background: #131c26; }
 .message-form { display: flex; align-items: center; gap: 7px; padding: 5px; margin: 13px 0 16px; background: #03080e35; border: 1px solid #ffffff14; border-radius: 14px; }

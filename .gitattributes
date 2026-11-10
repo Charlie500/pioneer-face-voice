@@ -1,0 +1,2 @@
+# Speech assets are pinned by size and SHA256 in the manifest.
+assets/speech/** -text

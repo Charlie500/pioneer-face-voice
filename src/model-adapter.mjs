@@ -1,4 +1,5 @@
 import { readSSE, readNDJSON } from './event-stream.mjs';
+import { applyFutureVoice } from './audio-effects.mjs';
 
 export function validateConfig(input) {
   if (!input || typeof input !== 'object') throw new Error('配置格式无效。');
@@ -7,6 +8,7 @@ export function validateConfig(input) {
   const speech = input.speech ?? {};
   if (!['ollama', 'compatible'].includes(chat.provider)) throw new Error('请选择 Ollama 或兼容 API。');
   if (speech.provider && !['system', 'compatible', 'qwen'].includes(speech.provider)) throw new Error('请选择系统声音、TTS API 或本地 Qwen3-TTS。');
+  if (speech.style && !['natural', 'future-ai'].includes(speech.style)) throw new Error('语音风格无效。');
   for (const service of [chat, transcription, speech]) {
     if (service.baseUrl) {
       const url = new URL(service.baseUrl);
@@ -15,15 +17,17 @@ export function validateConfig(input) {
     if (service.apiKeyEnv && !/^[A-Za-z_][A-Za-z0-9_]*$/.test(service.apiKeyEnv)) throw new Error('密钥环境变量名称无效。');
   }
   return {
+    autoStartVoice: input.autoStartVoice === true,
     chat: { provider: chat.provider, baseUrl: String(chat.baseUrl || '').replace(/\/+$/, ''), model: String(chat.model || '').trim(), apiKeyEnv: String(chat.apiKeyEnv || ''), systemPrompt: String(chat.systemPrompt || '') },
     transcription: { baseUrl: String(transcription.baseUrl || '').replace(/\/+$/, ''), model: String(transcription.model || '').trim(), apiKeyEnv: String(transcription.apiKeyEnv || ''), language: String(transcription.language || 'zh') },
-    speech: { provider: speech.provider || 'system', baseUrl: String(speech.baseUrl || 'http://127.0.0.1:8090/v1').replace(/\/+$/, ''), model: String(speech.model || 'Qwen/Qwen3-TTS-12Hz-0.6B-Base').trim(), voice: String(speech.voice || 'pioneer').trim(), apiKeyEnv: String(speech.apiKeyEnv || ''), language: ['Chinese', 'English', 'Auto'].includes(speech.language) ? speech.language : 'Chinese' },
+    speech: { provider: speech.provider || 'system', baseUrl: String(speech.baseUrl || 'http://127.0.0.1:8090/v1').replace(/\/+$/, ''), model: String(speech.model || 'Qwen/Qwen3-TTS-12Hz-0.6B-Base').trim(), voice: String(speech.voice || 'pioneer').trim(), apiKeyEnv: String(speech.apiKeyEnv || ''), language: ['Chinese', 'English', 'Auto'].includes(speech.language) ? speech.language : 'Chinese', style: speech.style || 'natural' },
   };
 }
 
 export function apiUrl(base, suffix) {
   const root = base.replace(/\/+$/, '');
-  return root.endsWith('/v1') ? `${root}/${suffix}` : `${root}/v1/${suffix}`;
+  const versioned = /\/v\d+(?:\/|$)/.test(new URL(root).pathname);
+  return `${root}${versioned ? '' : '/v1'}/${suffix}`;
 }
 
 export function authHeaders(service, environment = process.env) {
@@ -145,7 +149,8 @@ export async function synthesizeSpeech(config, text, signal) {
     chunks.push(chunk);
   }
   if (!size) throw new Error('语音服务返回了空音频。');
-  return { bytes: Buffer.concat(chunks), type };
+  const bytes = Buffer.concat(chunks);
+  return { bytes: service.style === 'future-ai' ? applyFutureVoice(bytes) : bytes, type };
 }
 
 export async function transcribe(config, buffer, contentType, signal) {

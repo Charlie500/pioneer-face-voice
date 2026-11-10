@@ -13,7 +13,7 @@ test('local server protects private files, saves settings, and authenticates usi
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'face-voice-server-'));
   await fs.mkdir(path.join(root, 'src'));
   await fs.mkdir(path.join(root, 'config'));
-  for (const name of ['server.mjs', 'package.json', 'index.html', 'style.css', 'src/model-adapter.mjs', 'src/event-stream.mjs']) {
+  for (const name of ['server.mjs', 'package.json', 'index.html', 'style.css', 'src/model-adapter.mjs', 'src/event-stream.mjs', 'src/audio-effects.mjs']) {
     await fs.copyFile(new URL(name, project), path.join(root, name));
   }
   // Keep this fixture unconfigured and independent of the user's real model service.

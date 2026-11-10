@@ -53,7 +53,7 @@ const server = http.createServer(async (request, response) => {
         return json(response, 200, { platform: os.platform(), arch: os.arch(), memoryGB, logicalCores, recommendedSpeechModel: memoryGB >= 8 && logicalCores >= 4 ? 'base' : 'tiny' });
       }
       const current = await config();
-      if (url.pathname === '/api/status' && request.method === 'GET') return json(response, 200, { chatConfigured: Boolean(current.chat.baseUrl && current.chat.model), transcriptionConfigured: Boolean(current.transcription.baseUrl && current.transcription.model), model: current.chat.model, provider: current.chat.provider });
+      if (url.pathname === '/api/status' && request.method === 'GET') return json(response, 200, { chatConfigured: Boolean(current.chat.baseUrl && current.chat.model), transcriptionConfigured: Boolean(current.transcription.baseUrl && current.transcription.model), model: current.chat.model, provider: current.chat.provider, autoStartVoice: current.autoStartVoice });
       if (url.pathname === '/api/config' && request.method === 'GET') return json(response, 200, current);
       if (url.pathname === '/api/config' && request.method === 'PUT') {
         const next = validateConfig(JSON.parse((await body(request, 64000)).toString()));

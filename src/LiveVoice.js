@@ -27,13 +27,13 @@ export class LiveVoice {
       const Context = window.AudioContext || window.webkitAudioContext;
       if (!Context || !window.AudioWorkletNode || !navigator.mediaDevices?.getUserMedia) throw new Error('此浏览器不支持连续录音，请使用 Chrome/Edge，或关闭“连续对话”改用手动录音。');
       this.onStatus('正在开启麦克风，请允许录音权限…');
-      const context = new Context({ sampleRate: 16000 });
-      this.context = context;
-      await context.resume();
-      if (generation !== this.generation) return;
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
       if (generation !== this.generation) { stream.getTracks().forEach(track => track.stop()); return; }
       this.stream = stream;
+      const context = new Context({ sampleRate: 16000 });
+      this.context = context;
+      await this.resumeContext(context, signal);
+      if (generation !== this.generation) return;
       await context.audioWorklet.addModule(new URL('./audio/vad-processor.js', import.meta.url));
       if (generation !== this.generation) return;
       this.detector = new SpeechDetector({
@@ -65,6 +65,21 @@ export class LiveVoice {
       if (generation !== this.generation) return;
       this.stop();
       throw error;
+    }
+  }
+  async resumeContext(context, signal) {
+    if (context.state !== 'suspended') { await context.resume(); return; }
+    const resumeOnInput = () => { context.resume().catch(() => {}); };
+    const prompt = setTimeout(() => {
+      if (!signal.aborted && context.state === 'suspended') this.onStatus('麦克风已授权。点击人脸或按任意键，启用语音。');
+    }, 400);
+    window.addEventListener('pointerup', resumeOnInput, { signal });
+    window.addEventListener('keydown', resumeOnInput, { signal });
+    try { await context.resume(); }
+    finally {
+      clearTimeout(prompt);
+      window.removeEventListener('pointerup', resumeOnInput);
+      window.removeEventListener('keydown', resumeOnInput);
     }
   }
   async recognize(samples, sampleRate, mode, options, generation, signal) {
